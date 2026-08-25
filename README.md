@@ -27,6 +27,7 @@ npm run dev
 - Draft 2020-12 JSON Schemas for token configuration, component definitions, accessibility rules, and export manifests.
 - Runtime Ajv 2020 schema validation with path-specific failures for malformed source or recovered data.
 - Deterministic dependency graph for semantic-token-to-component relationships.
+- Functional local previews for Homepage, Markets, Project Detail, Careers, and Contact.
 - Focused Vitest coverage for resolution, validation, contrast, diffs, and export ordering.
 
 The included token and preview content is representative sample data for the prototype. The official baseline is never mutated by working-state changes.
@@ -40,4 +41,4 @@ The local Word reference documents are intentionally ignored by Git and remain w
 
 ## Next implementation slice
 
-Add the remaining preview routes, expose dependency impact in the inspector, and broaden component/integration coverage.
+Register page-specific component usages, expose dependency impact in the inspector, and broaden component/integration coverage.

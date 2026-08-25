@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0.0",
+  "configurationId": "my-design-system",
+  "version": "1.0.0",
+  "primitives": {
+    "neutral-0": { "id": "neutral-0", "type": "primitive", "group": "Neutral", "value": "#FFFFFF", "label": "White" },
+    "neutral-950": { "id": "neutral-950", "type": "primitive", "group": "Neutral", "value": "#14212B", "label": "Ink" },
+    "cerulean-600": { "id": "cerulean-600", "type": "primitive", "group": "Cerulean", "value": "#0067A5", "label": "Primary" },
+    "cerulean-100": { "id": "cerulean-100", "type": "primitive", "group": "Cerulean", "value": "#D9F0FA", "label": "Mist" },
+    "orange-500": { "id": "orange-500", "type": "primitive", "group": "Orange", "value": "#F4A261", "label": "Action" },
+    "teal-600": { "id": "teal-600", "type": "primitive", "group": "Teal", "value": "#168A83", "label": "Success" },
+    "taupe-200": { "id": "taupe-200", "type": "primitive", "group": "Taupe", "value": "#E7DED3", "label": "Border" }
+  },
+  "semanticTokens": {
+    "background-canvas": { "id": "background-canvas", "type": "semantic", "category": "Background", "mapsTo": "neutral-0", "label": "Canvas", "description": "Primary page background", "allowedPrimitiveGroups": ["Neutral", "Cerulean", "Taupe"] },
+    "background-subtle": { "id": "background-subtle", "type": "semantic", "category": "Background", "mapsTo": "cerulean-100", "label": "Subtle", "description": "Quiet section background", "allowedPrimitiveGroups": ["Neutral", "Cerulean", "Taupe"] },
+    "text-primary": { "id": "text-primary", "type": "semantic", "category": "Text", "mapsTo": "neutral-950", "label": "Primary", "description": "Main text", "allowedPrimitiveGroups": ["Neutral", "Cerulean"] },
+    "text-on-brand": { "id": "text-on-brand", "type": "semantic", "category": "Text", "mapsTo": "neutral-0", "label": "On brand", "description": "Text on brand surfaces", "allowedPrimitiveGroups": ["Neutral"] },
+    "accent-brand": { "id": "accent-brand", "type": "semantic", "category": "Accent", "mapsTo": "cerulean-600", "label": "Brand accent", "description": "Primary accent", "allowedPrimitiveGroups": ["Cerulean", "Teal"] },
+    "action-primary": { "id": "action-primary", "type": "semantic", "category": "Action", "mapsTo": "orange-500", "label": "Primary action", "description": "Primary call to action", "allowedPrimitiveGroups": ["Orange", "Teal"] },
+    "border-subtle": { "id": "border-subtle", "type": "semantic", "category": "Border", "mapsTo": "taupe-200", "label": "Subtle border", "description": "Quiet dividers", "allowedPrimitiveGroups": ["Neutral", "Taupe", "Cerulean"] }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stobg.local/schemas/export-manifest.schema.json",
+  "title": "STOBG Export Manifest",
+  "type": "object", "additionalProperties": false,
+  "required": ["schemaVersion", "configurationId", "baselineVersion", "candidateVersion", "generatedAt", "mappings", "validationSummary"],
+  "properties": {
+    "schemaVersion": { "type": "string", "minLength": 1 }, "configurationId": { "type": "string", "minLength": 1 },
+    "baselineVersion": { "type": "string", "minLength": 1 }, "candidateVersion": { "type": "string", "minLength": 1 }, "generatedAt": { "type": "string", "minLength": 1 },
+    "mappings": { "type": "object", "additionalProperties": { "type": "string", "minLength": 1 } },
+    "validationSummary": { "type": "object", "additionalProperties": false, "required": ["errorCount", "warningCount", "accessibilityFailCount"], "properties": {
+      "errorCount": { "type": "integer", "minimum": 0 }, "warningCount": { "type": "integer", "minimum": 0 }, "accessibilityFailCount": { "type": "integer", "minimum": 0 }, "overrideReason": { "type": "string" }
+    } }
+  }
+}

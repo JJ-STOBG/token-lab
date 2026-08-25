@@ -24,6 +24,7 @@ npm run dev
 - Changed-token filtering and an official-versus-working comparison drawer.
 - Validation drawer with blocking issue summary and explicit accessibility override reasons recorded in export metadata.
 - Versioned browser-local recovery with a visible discard action, plus JSON/CSS clipboard copy.
+- Draft 2020-12 JSON Schemas for token configuration, component definitions, accessibility rules, and export manifests.
 - Focused Vitest coverage for resolution, validation, contrast, diffs, and export ordering.
 
 The included token and preview content is representative sample data for the prototype. The official baseline is never mutated by working-state changes.
@@ -37,4 +38,4 @@ The local Word reference documents are intentionally ignored by Git and remain w
 
 ## Next implementation slice
 
-Add JSON schemas, the remaining preview routes, and broader component/integration coverage.
+Wire the JSON Schemas into startup and export validation, add the remaining preview routes, and broaden component/integration coverage.

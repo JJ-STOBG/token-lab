@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stobg.local/schemas/component-definitions.schema.json",
+  "title": "STOBG Component Definitions",
+  "type": "array",
+  "items": {
+    "type": "object", "additionalProperties": false,
+    "required": ["id", "name", "previewId", "tokenUsages"],
+    "properties": {
+      "id": { "type": "string", "minLength": 1 }, "name": { "type": "string", "minLength": 1 }, "previewId": { "type": "string", "minLength": 1 },
+      "tokenUsages": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "semanticTokenId", "property", "description"], "properties": {
+        "id": { "type": "string", "minLength": 1 }, "semanticTokenId": { "type": "string", "minLength": 1 }, "property": { "enum": ["background", "text", "border", "icon", "focus", "other"] }, "description": { "type": "string", "minLength": 1 }
+      } } }
+    }
+  }
+}

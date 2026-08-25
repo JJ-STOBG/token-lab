@@ -1,0 +1,112 @@
+import { useMemo, useState } from 'react'
+import './App.css'
+import { evaluateAccessibility } from './accessibility/evaluator'
+import { accessibilityRules } from './accessibility/rules'
+import { componentDefinitions, officialConfiguration } from './tokens/official'
+import { exportConfiguration } from './tokens/exporter'
+import { diffConfigurations, resolveTokens } from './tokens/resolver'
+import type { TokenConfiguration } from './tokens/token-types'
+import { validateConfiguration } from './tokens/validator'
+
+function App() {
+  const [working, setWorking] = useState<TokenConfiguration>(() => structuredClone(officialConfiguration))
+  const [selectedTokenId, setSelectedTokenId] = useState('action-primary')
+  const [selectedComponentId, setSelectedComponentId] = useState('homepage-hero')
+  const [query, setQuery] = useState('')
+  const [history, setHistory] = useState<TokenConfiguration[]>([])
+  const [future, setFuture] = useState<TokenConfiguration[]>([])
+  const [changedOnly, setChangedOnly] = useState(false)
+  const [comparisonEnabled, setComparisonEnabled] = useState(false)
+  const resolved = useMemo(() => resolveTokens(working), [working])
+  const changes = useMemo(() => diffConfigurations(officialConfiguration, working), [working])
+  const validation = useMemo(() => validateConfiguration(working), [working])
+  const artifacts = useMemo(() => exportConfiguration(working), [working])
+  const accessibilityResults = useMemo(() => evaluateAccessibility(accessibilityRules.filter((rule) => rule.componentId === selectedComponentId), resolved), [resolved, selectedComponentId])
+  const selectedToken = working.semanticTokens[selectedTokenId]
+  const selectedComponent = componentDefinitions.find((component) => component.id === selectedComponentId) ?? componentDefinitions[0]
+  const filteredTokens = Object.values(working.semanticTokens).filter((token) =>
+    `${token.label} ${token.category} ${token.id}`.toLowerCase().includes(query.toLowerCase()),
+  ).filter((token) => !changedOnly || token.mapsTo !== officialConfiguration.semanticTokens[token.id].mapsTo)
+  const componentUsages = selectedComponent.tokenUsages.map((usage) => ({ usage, token: working.semanticTokens[usage.semanticTokenId], resolved: resolved[usage.semanticTokenId] }))
+
+  function updateMapping(primitiveId: string) {
+    if (primitiveId === selectedToken.mapsTo) return
+    setHistory((items) => [...items, working])
+    setFuture([])
+    setWorking({ ...working, semanticTokens: { ...working.semanticTokens, [selectedTokenId]: { ...selectedToken, mapsTo: primitiveId } } })
+  }
+
+  function undo() {
+    const previous = history.at(-1)
+    if (!previous) return
+    setFuture((items) => [...items, working])
+    setWorking(previous)
+    setHistory((items) => items.slice(0, -1))
+  }
+
+  function redo() {
+    const next = future.at(-1)
+    if (!next) return
+    setHistory((items) => [...items, working])
+    setWorking(next)
+    setFuture((items) => items.slice(0, -1))
+  }
+
+  function reset() {
+    setHistory([])
+    setFuture([])
+    setWorking(structuredClone(officialConfiguration))
+  }
+
+  function downloadArtifact(kind: 'json' | 'css') {
+    if (!validation.valid) return
+    const content = artifacts[kind]
+    const type = kind === 'json' ? 'application/json' : 'text/css'
+    const filename = kind === 'json' ? 'stobg-working-tokens.json' : 'stobg-working-tokens.css'
+    const url = URL.createObjectURL(new Blob([content], { type }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
+  return (
+    <div className="app-shell">
+      <header className="topbar">
+        <div className="brand"><span className="brand-mark">S</span><div><strong>STOBG</strong><span>Design System Lab</span></div></div>
+        <div className="baseline"><span className="eyebrow">OFFICIAL BASELINE</span><strong>v{officialConfiguration.version}</strong><span className="status-dot" /> <span className="working-label">Working state {changes.length ? 'changed' : 'clean'}</span></div>
+        <div className="actions"><button onClick={undo} disabled={!history.length}>Undo</button><button onClick={redo} disabled={!future.length}>Redo</button><button onClick={reset} disabled={!changes.length}>Reset</button><button className={comparisonEnabled ? 'compare-button active' : 'compare-button'} onClick={() => setComparisonEnabled((enabled) => !enabled)}>Compare</button><button className="export-button" onClick={() => downloadArtifact('json')} disabled={!validation.valid}>Export JSON</button><button className="export-button" onClick={() => downloadArtifact('css')} disabled={!validation.valid}>Export CSS</button></div>
+      </header>
+
+      <main className="workspace">
+        <aside className="token-panel" aria-label="Token browser">
+          <div className="panel-heading"><div><span className="eyebrow">GOVERNANCE</span><h1>Token browser</h1></div><span className="count">{filteredTokens.length}</span></div>
+          <label className="search"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search tokens" aria-label="Search tokens" /></label>
+          <div className="filter-row"><button className={!changedOnly ? 'filter active' : 'filter'} onClick={() => setChangedOnly(false)}>All tokens</button><button className={changedOnly ? 'filter active' : 'filter'} onClick={() => setChangedOnly(true)}>Changed</button></div>
+          <div className="token-list">
+            {filteredTokens.map((token) => { const changed = token.mapsTo !== officialConfiguration.semanticTokens[token.id].mapsTo; return <button key={token.id} className={`token-row ${selectedTokenId === token.id ? 'selected' : ''}`} onClick={() => setSelectedTokenId(token.id)}><span className="swatch" style={{ backgroundColor: resolved[token.id].value }} /><span className="token-copy"><strong>{token.label}</strong><small>{token.category} / {token.id}</small></span>{changed && <span className="changed" aria-label="Changed">●</span>}</button> })}
+          </div>
+          <div className="panel-foot"><span className="legend-dot changed" /> Working changes <strong>{changes.length}</strong></div>
+        </aside>
+
+        <section className="preview-area" aria-label="Preview workspace">
+          <div className="preview-toolbar"><div><span className="eyebrow">LIVE PREVIEW</span><h2>Homepage / Marketing</h2></div><div className="toolbar-controls"><button className="page-tab active">Homepage</button><button className="page-tab">Markets</button><button className="viewport">Desktop 1440</button></div></div>
+          <div className="preview-canvas">
+            <div className="site-preview">
+              <div className="site-nav"><strong>STOBG</strong><span>What we do</span><span>Our work</span><span>About us</span><button>Contact us ↗</button></div>
+              <button className="site-hero" onClick={() => setSelectedComponentId('homepage-hero')} style={{ backgroundColor: resolved['accent-brand'].value }}><span className="preview-tag">HOMEPAGE HERO · CLICK TO INSPECT</span><h3>Building a better<br /><em>every day.</em></h3><p>We create places, services and experiences that help communities thrive.</p><span className="hero-cta" style={{ backgroundColor: resolved['action-primary'].value, color: resolved['text-primary'].value }}>Explore our work <b>↗</b></span></button>
+              <button className="projects" onClick={() => setSelectedComponentId('featured-projects')} style={{ backgroundColor: resolved['background-subtle'].value }}><div className="section-label"><span>01</span><strong>Featured projects</strong><span className="rule" /></div><div className="project-grid"><div className="project-card"><div className="project-art art-one" /><strong style={{ color: resolved['text-primary'].value }}>North Quay Commons</strong><small>Regeneration · Manchester</small></div><div className="project-card"><div className="project-art art-two" /><strong style={{ color: resolved['text-primary'].value }}>The Exchange</strong><small>Workplace · Birmingham</small></div></div></button>
+            </div>
+          </div>
+        </section>
+
+        <aside className="inspector" aria-label="Component inspector"><div className="inspector-title"><div><span className="eyebrow">INSPECTOR</span><h2>{selectedComponent.name}</h2></div><span className="inspect-icon">⌘</span></div><p className="muted">Registered usage chain · {selectedComponent.previewId}</p><div className="usage-list">{componentUsages.map(({ usage, token, resolved: value }) => <button className="usage" key={usage.id} onClick={() => setSelectedTokenId(usage.semanticTokenId)}><div className="usage-head"><strong>{usage.description}</strong><span>{usage.property}</span></div><div className="chain"><span>{token.id}</span><b>→</b><span>{value.primitiveTokenId}</span><b>→</b><i style={{ backgroundColor: value.value }} /> <code>{value.value}</code></div></button>)}</div><div className="inspector-section"><span className="eyebrow">SELECTED TOKEN</span><h3>{selectedToken.label}</h3><p className="muted">{selectedToken.description}</p><div className="mapping-line"><span className="swatch large" style={{ backgroundColor: resolved[selectedTokenId].value }} /><div><small>RESOLVES TO</small><strong>{resolved[selectedTokenId].primitiveTokenId}</strong></div><code>{resolved[selectedTokenId].value}</code></div><label className="mapping-label" htmlFor="mapping">Working mapping<select id="mapping" value={selectedToken.mapsTo} onChange={(event) => updateMapping(event.target.value)}>{Object.values(working.primitives).filter((primitive) => !selectedToken.allowedPrimitiveGroups || selectedToken.allowedPrimitiveGroups.includes(primitive.group)).map((primitive) => <option key={primitive.id} value={primitive.id}>{primitive.id} · {primitive.value}</option>)}</select></label></div><div className="accessibility"><span className="eyebrow">ACCESSIBILITY RESULTS</span>{accessibilityResults.map((result) => <div className={`contrast-result ${result.status}`} key={result.ruleId}><span>{result.status === 'pass' ? '✓' : '!'}</span><div><strong>{result.label} · {result.status}</strong><small>{result.ratio.toFixed(2)}:1 / {result.minimumRatio}:1 required</small></div></div>)}</div><div className="accessibility validation-block"><span className="eyebrow">VALIDATION SNAPSHOT</span><div className={`pass ${validation.valid ? '' : 'validation-error'}`}><span>{validation.valid ? '✓' : '!'}</span><div><strong>{validation.valid ? 'Configuration valid' : `${validation.errors.length} blocking error${validation.errors.length > 1 ? 's' : ''}`}</strong><small>{validation.warnings.length ? `${validation.warnings.length} warning${validation.warnings.length > 1 ? 's' : ''} · ` : ''}Export is {validation.valid ? 'ready' : 'blocked'}.</small></div></div></div></aside>
+      </main>
+      {comparisonEnabled && <section className="comparison-drawer" aria-label="Official versus working comparison"><div><span className="eyebrow">COMPARISON</span><h2>Official versus working</h2></div><button className="close-comparison" onClick={() => setComparisonEnabled(false)} aria-label="Close comparison">×</button><div className="comparison-summary"><strong>{changes.length}</strong><span>changed mapping{changes.length === 1 ? '' : 's'}</span></div><div className="diff-list">{changes.length === 0 ? <p className="muted">Working state matches the official baseline.</p> : changes.map((change) => <button key={change.semanticTokenId} className="diff-row" onClick={() => { setSelectedTokenId(change.semanticTokenId); setComparisonEnabled(false) }}><strong>{change.semanticTokenId}</strong><span>{change.officialPrimitiveTokenId}</span><b>→</b><span className="working-value">{change.workingPrimitiveTokenId}</span></button>)}</div></section>}
+      <div className="live-region" role="status" aria-live="polite">{changes.length ? `${changes.length} working mapping${changes.length > 1 ? 's' : ''} changed` : 'Official baseline active'}</div>
+    </div>
+  )
+}
+
+export default App

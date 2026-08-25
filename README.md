@@ -31,7 +31,7 @@ npm run dev
 - Deterministic dependency graph for semantic-token-to-component relationships.
 - Functional local previews for Homepage, Markets, Project Detail, Careers, and Contact.
 - Generic product surface with no organization-specific branding in the UI or generated artifacts.
-- JSON token upload that validates the configuration and requires the semantic IDs used by the built-in preview registry before replacing the baseline.
+- JSON and deterministic CSS token upload that validates the configuration and requires the semantic IDs used by the built-in preview registry before replacing the baseline.
 - Bundled primitive scales across Neutral, Cerulean, Orange, Teal, Taupe, and Burgundy, with semantic allowed-group filtering retained.
 - Page-specific registered components for Markets, Project Detail, and Careers, plus selected-token dependency impact in the lab shell.
 - Page-specific automated accessibility rules and export manifests carrying actual validation and contrast-failure counts.
@@ -49,7 +49,7 @@ Use **Upload tokens** in the header to load a JSON configuration. A valid upload
 - A `semanticTokens` object where each token maps to an existing primitive
 - These preview-compatible semantic IDs: `accent-brand`, `action-primary`, `background-subtle`, `background-canvas`, `text-primary`, and `text-on-brand`
 
-See [examples/tokens.example.json](examples/tokens.example.json) for a complete starter file. Display labels and descriptions can be changed; IDs are the stable references used by previews and rules.
+See [examples/tokens.example.json](examples/tokens.example.json) for a complete starter file. Display labels and descriptions can be changed; IDs are the stable references used by previews and rules. CSS uploads must use the generated `--token-lab-primitives-*` and `--token-lab-semantic-*` custom property format.
 
 An accepted upload becomes the new immutable baseline. The working state starts as a separate copy, so edits, undo, redo, reset, comparison, validation, and exports operate on the uploaded configuration. Invalid files are rejected without replacing the current state.
 

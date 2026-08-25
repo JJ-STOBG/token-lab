@@ -8,6 +8,7 @@ import { evaluateAccessibility } from '../accessibility/evaluator'
 import { accessibilityRules } from '../accessibility/rules'
 import { buildDependencyGraph } from './dependencies'
 import { validateSourceSchema } from './schema-validator'
+import { importCssConfiguration } from './css-importer'
 
 describe('token domain', () => {
     it('resolves semantic tokens to primitive values', () => {
@@ -46,6 +47,13 @@ describe('token domain', () => {
         expect(first.css.indexOf('--token-lab-primitives-')).toBeLessThan(first.css.indexOf('--token-lab-semantic-'))
         expect(exportConfiguration(working, { overrideReason: 'Reviewed by design owner', accessibilityFailCount: 1 }).manifest.validationSummary.overrideReason).toBe('Reviewed by design owner')
         expect(exportConfiguration(working, { accessibilityFailCount: 1 }).manifest.validationSummary.accessibilityFailCount).toBe(1)
+    })
+
+    it('round-trips deterministic CSS token exports', () => {
+        const imported = importCssConfiguration(exportConfiguration(officialConfiguration).css)
+        expect(Object.keys(imported.primitives).length).toBeGreaterThan(30)
+        expect(imported.semanticTokens['action-primary'].mapsTo).toBe('orange-500')
+        expect(validateSourceSchema(imported).length).toBe(0)
     })
 
     it('evaluates registered contrast rules from resolved tokens', () => {

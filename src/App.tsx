@@ -8,6 +8,7 @@ import { diffConfigurations, resolveTokens } from './tokens/resolver'
 import { buildDependencyGraph } from './tokens/dependencies'
 import type { TokenConfiguration } from './tokens/token-types'
 import { validateConfiguration } from './tokens/validator'
+import { importCssConfiguration } from './tokens/css-importer'
 import { PreviewWorkspace } from './previews/PreviewWorkspace'
 
 function App() {
@@ -85,7 +86,9 @@ function App() {
     const reader = new FileReader()
     reader.onload = () => {
       try {
-        const candidate = JSON.parse(String(reader.result)) as TokenConfiguration
+        const candidate = file.name.toLowerCase().endsWith('.css')
+          ? importCssConfiguration(String(reader.result), file.name.replace(/\.css$/i, ''))
+          : JSON.parse(String(reader.result)) as TokenConfiguration
         const requiredIds = ['accent-brand', 'action-primary', 'background-subtle', 'background-canvas', 'text-primary', 'text-on-brand']
         const result = validateConfiguration(candidate)
         if (!result.valid) throw new Error(result.errors[0]?.message ?? 'Token configuration is invalid.')
@@ -134,7 +137,7 @@ function App() {
       <header className="topbar">
         <div className="brand"><span className="brand-mark">T</span><div><strong>TOKEN</strong><span>Design System Lab</span></div></div>
         <div className="baseline"><span className="eyebrow">BASELINE</span><strong>v{baseline.version}</strong><span className="status-dot" /> <span className="working-label">Working state {changes.length ? 'changed' : 'clean'}</span></div>
-        <div className="actions"><label className="upload-button">Upload tokens<input type="file" accept="application/json,.json" onChange={importTokens} /></label><button onClick={undo} disabled={!history.length}>Undo</button><button onClick={redo} disabled={!future.length}>Redo</button><button onClick={reset} disabled={!changes.length}>Reset</button><button className={comparisonEnabled ? 'compare-button active' : 'compare-button'} onClick={() => setComparisonEnabled((enabled) => !enabled)}>Compare</button><button className={validationEnabled ? 'compare-button active' : 'compare-button'} onClick={() => setValidationEnabled((enabled) => !enabled)}>Validation</button><button className="export-button" onClick={() => copyArtifact('json')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Copy JSON</button><button className="export-button" onClick={() => copyArtifact('css')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Copy CSS</button><button className="export-button" onClick={() => downloadArtifact('json')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Export JSON</button><button className="export-button" onClick={() => downloadArtifact('css')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Export CSS</button></div>
+        <div className="actions"><label className="upload-button">Upload tokens<input type="file" accept="application/json,.json,text/css,.css" onChange={importTokens} /></label><button onClick={undo} disabled={!history.length}>Undo</button><button onClick={redo} disabled={!future.length}>Redo</button><button onClick={reset} disabled={!changes.length}>Reset</button><button className={comparisonEnabled ? 'compare-button active' : 'compare-button'} onClick={() => setComparisonEnabled((enabled) => !enabled)}>Compare</button><button className={validationEnabled ? 'compare-button active' : 'compare-button'} onClick={() => setValidationEnabled((enabled) => !enabled)}>Validation</button><button className="export-button" onClick={() => copyArtifact('json')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Copy JSON</button><button className="export-button" onClick={() => copyArtifact('css')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Copy CSS</button><button className="export-button" onClick={() => downloadArtifact('json')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Export JSON</button><button className="export-button" onClick={() => downloadArtifact('css')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Export CSS</button></div>
       </header>
       {importMessage && <div className="import-message" role="status">{importMessage}</div>}
       {recovered && <div className="recovery-banner" role="status"><span>Recovered working state from this browser.</span><button onClick={discardRecovery}>Discard recovery</button></div>}

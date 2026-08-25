@@ -21,6 +21,7 @@ npm run dev
 - Configuration validation with blocking reference/color/group errors and warnings.
 - WCAG contrast ratio utility and deterministic primitive-first JSON/CSS export.
 - Registered accessibility rules evaluated against the current working resolution, with measured ratios and pass/fail status in the inspector.
+- Changed-token filtering and an official-versus-working comparison drawer.
 - Focused Vitest coverage for resolution, validation, contrast, diffs, and export ordering.
 
 The included token and preview content is representative sample data for the prototype. The official baseline is never mutated by working-state changes.
@@ -33,4 +34,4 @@ The included token and preview content is representative sample data for the pro
 
 ## Next implementation slice
 
-Add JSON schemas, the remaining preview routes, comparison and detailed validation panels, accessibility rule evaluation, and broader component/integration coverage.
+Add JSON schemas, the remaining preview routes, detailed validation panels, accessibility override handling, and broader component/integration coverage.

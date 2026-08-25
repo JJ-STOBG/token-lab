@@ -44,12 +44,13 @@ describe('token domain', () => {
         const second = exportConfiguration(working)
         expect(first).toEqual(second)
         expect(first.css.indexOf('--stobg-primitives-')).toBeLessThan(first.css.indexOf('--stobg-semantic-'))
-        expect(exportConfiguration(working, 'Reviewed by design owner').manifest.validationSummary.overrideReason).toBe('Reviewed by design owner')
+        expect(exportConfiguration(working, { overrideReason: 'Reviewed by design owner', accessibilityFailCount: 1 }).manifest.validationSummary.overrideReason).toBe('Reviewed by design owner')
+        expect(exportConfiguration(working, { accessibilityFailCount: 1 }).manifest.validationSummary.accessibilityFailCount).toBe(1)
     })
 
     it('evaluates registered contrast rules from resolved tokens', () => {
         const results = evaluateAccessibility(accessibilityRules, resolveTokens(officialConfiguration))
-        expect(results).toHaveLength(4)
+        expect(results).toHaveLength(7)
         expect(results.find((result) => result.ruleId === 'form-label-contrast')?.status).toBe('pass')
         expect(results.every((result) => result.ratio > 0)).toBe(true)
     })

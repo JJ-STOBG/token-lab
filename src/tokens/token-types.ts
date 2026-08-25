@@ -59,6 +59,13 @@ export interface ExportArtifacts {
     manifest: ExportManifest
 }
 
+export interface ExportOptions {
+    overrideReason?: string
+    errorCount?: number
+    warningCount?: number
+    accessibilityFailCount?: number
+}
+
 export interface ExportManifest {
     schemaVersion: string
     configurationId: string

@@ -37,7 +37,7 @@ function App() {
   const validation = useMemo(() => validateConfiguration(working), [working])
   const allAccessibilityResults = useMemo(() => evaluateAccessibility(accessibilityRules, resolved), [resolved])
   const accessibilityFailures = allAccessibilityResults.filter((result) => result.status === 'fail')
-  const artifacts = useMemo(() => exportConfiguration(working, overrideReason), [overrideReason, working])
+  const artifacts = useMemo(() => exportConfiguration(working, { overrideReason, errorCount: validation.errors.length, warningCount: validation.warnings.length, accessibilityFailCount: accessibilityFailures.length }), [accessibilityFailures.length, overrideReason, validation.errors.length, validation.warnings.length, working])
   const accessibilityResults = useMemo(() => evaluateAccessibility(accessibilityRules.filter((rule) => rule.componentId === selectedComponentId), resolved), [resolved, selectedComponentId])
   const selectedToken = working.semanticTokens[selectedTokenId]
   const selectedComponent = componentDefinitions.find((component) => component.id === selectedComponentId) ?? componentDefinitions[0]

@@ -1,10 +1,10 @@
-import type { ExportArtifacts, TokenConfiguration } from './token-types'
+import type { ExportArtifacts, ExportOptions, TokenConfiguration } from './token-types'
 
 function variableName(id: string): string {
     return `--stobg-${id.replace(/[^a-zA-Z0-9]+/g, '-')}`.toLowerCase()
 }
 
-export function exportConfiguration(configuration: TokenConfiguration, overrideReason = ''): ExportArtifacts {
+export function exportConfiguration(configuration: TokenConfiguration, options: ExportOptions = {}): ExportArtifacts {
     const primitiveEntries = Object.values(configuration.primitives).sort((a, b) => a.id.localeCompare(b.id))
     const semanticEntries = Object.values(configuration.semanticTokens).sort((a, b) => a.id.localeCompare(b.id))
     const manifest = {
@@ -14,7 +14,7 @@ export function exportConfiguration(configuration: TokenConfiguration, overrideR
         candidateVersion: configuration.version,
         generatedAt: 'deterministic',
         mappings: Object.fromEntries(semanticEntries.map((token) => [token.id, token.mapsTo])),
-        validationSummary: { errorCount: 0, warningCount: 0, accessibilityFailCount: 0, ...(overrideReason ? { overrideReason } : {}) },
+        validationSummary: { errorCount: options.errorCount ?? 0, warningCount: options.warningCount ?? 0, accessibilityFailCount: options.accessibilityFailCount ?? 0, ...(options.overrideReason ? { overrideReason: options.overrideReason } : {}) },
     }
     const json = JSON.stringify({
         manifest,

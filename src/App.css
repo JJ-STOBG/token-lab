@@ -218,7 +218,12 @@
   color: var(--ink);
   font-weight: 800;
 }
-.compare-button.active { background: #d9f0fa; color: var(--ink); border-color: #9dc3cf; }
+
+.compare-button.active {
+  background: #d9f0fa;
+  color: var(--ink);
+  border-color: #9dc3cf;
+}
 
 .workspace {
   display: grid;
@@ -796,16 +801,94 @@ h3 {
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
 }
-.comparison-drawer { position: fixed; z-index: 5; top: 76px; right: 0; width: min(430px, 100vw); min-height: 220px; padding: 25px 24px; background: var(--paper); border-left: 1px solid var(--line); border-bottom: 1px solid var(--line); box-shadow: -8px 12px 30px rgba(20,33,43,.15); }
-.comparison-drawer h2 { margin-top: 6px; }
-.close-comparison { position: absolute; top: 20px; right: 18px; border: 0; background: transparent; color: var(--muted); font-size: 22px; }
-.comparison-summary { display: flex; align-items: baseline; gap: 8px; margin: 22px 0 14px; color: var(--muted); font-size: 11px; }
-.comparison-summary strong { color: var(--ink); font-size: 26px; }
-.diff-list { border-top: 1px solid var(--line); }
-.diff-row { width: 100%; display: grid; grid-template-columns: 1.4fr 1fr auto 1fr; gap: 8px; align-items: center; padding: 11px 0; border: 0; border-bottom: 1px solid #ebe9e4; background: transparent; text-align: left; color: var(--muted); font: 9px var(--mono); }
-.diff-row strong { color: var(--ink); font: 10px 'Trebuchet MS'; }
-.diff-row b { color: var(--orange); }
-.diff-row .working-value { color: var(--cerulean); }
+
+.comparison-drawer {
+  position: fixed;
+  z-index: 5;
+  top: 76px;
+  right: 0;
+  width: min(430px, 100vw);
+  min-height: 220px;
+  padding: 25px 24px;
+  background: var(--paper);
+  border-left: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  box-shadow: -8px 12px 30px rgba(20, 33, 43, .15);
+}
+
+.comparison-drawer h2 {
+  margin-top: 6px;
+}
+
+.close-comparison {
+  position: absolute;
+  top: 20px;
+  right: 18px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 22px;
+}
+
+.comparison-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 22px 0 14px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.comparison-summary strong {
+  color: var(--ink);
+  font-size: 26px;
+}
+
+.diff-list {
+  border-top: 1px solid var(--line);
+}
+
+.diff-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr auto 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 11px 0;
+  border: 0;
+  border-bottom: 1px solid #ebe9e4;
+  background: transparent;
+  text-align: left;
+  color: var(--muted);
+  font: 9px var(--mono);
+}
+
+.diff-row strong {
+  color: var(--ink);
+  font: 10px 'Trebuchet MS';
+}
+
+.diff-row b {
+  color: var(--orange);
+}
+
+.diff-row .working-value {
+  color: var(--cerulean);
+}
+
+.validation-summary { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 14px; color: var(--muted); font: 9px var(--mono); }
+.validation-summary span { padding: 5px 7px; background: #ebe9e4; }
+.validation-summary .summary-good { color: var(--teal); }
+.validation-summary .summary-bad { color: #a13d33; }
+.issue { display: grid; gap: 4px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 10px; }
+.issue strong { color: #a13d33; font: 9px var(--mono); }
+.issue span { color: var(--muted); }
+.override-box { display: grid; gap: 8px; margin-top: 15px; padding: 13px; background: #fff3e9; border-left: 3px solid var(--orange); }
+.override-box strong { font-size: 11px; }
+.override-box p { color: var(--muted); font-size: 10px; line-height: 1.4; }
+.override-box label { display: grid; gap: 6px; color: var(--muted); font-size: 9px; }
+.override-box textarea { resize: vertical; border: 1px solid var(--line); padding: 8px; color: var(--ink); background: #fff; font-size: 10px; }
+.validation-note { margin-top: 14px; color: var(--muted); font-size: 10px; }
 
 button:focus-visible,
 input:focus-visible,

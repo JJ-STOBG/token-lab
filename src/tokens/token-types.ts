@@ -56,6 +56,22 @@ export interface ValidationResult {
 export interface ExportArtifacts {
     json: string
     css: string
+    manifest: ExportManifest
+}
+
+export interface ExportManifest {
+    schemaVersion: string
+    configurationId: string
+    baselineVersion: string
+    candidateVersion: string
+    generatedAt: string
+    mappings: Record<string, string>
+    validationSummary: {
+        errorCount: number
+        warningCount: number
+        accessibilityFailCount: number
+        overrideReason?: string
+    }
 }
 
 export interface ComponentDefinition {

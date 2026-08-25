@@ -36,6 +36,7 @@ describe('token domain', () => {
         const second = exportConfiguration(working)
         expect(first).toEqual(second)
         expect(first.css.indexOf('--stobg-primitives-')).toBeLessThan(first.css.indexOf('--stobg-semantic-'))
+        expect(exportConfiguration(working, 'Reviewed by design owner').manifest.validationSummary.overrideReason).toBe('Reviewed by design owner')
     })
 
     it('evaluates registered contrast rules from resolved tokens', () => {

@@ -1,7 +1,7 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://stobg.local/schemas/component-definitions.schema.json",
-    "title": "STOBG Component Definitions",
+    "$id": "https://token-lab.local/schemas/component-definitions.schema.json",
+    "title": "Design Token Lab Component Definitions",
     "type": "array",
     "items": {
         "type": "object",

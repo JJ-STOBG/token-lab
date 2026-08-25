@@ -1,7 +1,7 @@
 import type { ExportArtifacts, ExportOptions, TokenConfiguration } from './token-types'
 
 function variableName(id: string): string {
-    return `--stobg-${id.replace(/[^a-zA-Z0-9]+/g, '-')}`.toLowerCase()
+    return `--token-lab-${id.replace(/[^a-zA-Z0-9]+/g, '-')}`.toLowerCase()
 }
 
 export function exportConfiguration(configuration: TokenConfiguration, options: ExportOptions = {}): ExportArtifacts {

@@ -1,7 +1,7 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://stobg.local/schemas/export-manifest.schema.json",
-    "title": "STOBG Export Manifest",
+    "$id": "https://token-lab.local/schemas/export-manifest.schema.json",
+    "title": "Design Token Lab Export Manifest",
     "type": "object",
     "additionalProperties": false,
     "required": [

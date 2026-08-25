@@ -1,6 +1,6 @@
-# STOBG Design System Lab
+# Design Token Lab
 
-A local-first prototype for exploring STOBG semantic color mappings before production use.
+A local-first tool for exploring semantic color mappings before production use.
 
 ## Start
 
@@ -28,11 +28,13 @@ npm run dev
 - Runtime Ajv 2020 schema validation with path-specific failures for malformed source or recovered data.
 - Deterministic dependency graph for semantic-token-to-component relationships.
 - Functional local previews for Homepage, Markets, Project Detail, Careers, and Contact.
+- Generic product surface with no organization-specific branding in the UI or generated artifacts.
+- JSON token upload that validates the configuration and requires the semantic IDs used by the built-in preview registry before replacing the baseline.
 - Page-specific registered components for Markets, Project Detail, and Careers, plus selected-token dependency impact in the lab shell.
 - Page-specific automated accessibility rules and export manifests carrying actual validation and contrast-failure counts.
 - Focused Vitest coverage for resolution, validation, contrast, diffs, and export ordering.
 
-The included token and preview content is representative sample data for the prototype. The official baseline is never mutated by working-state changes.
+The included token and preview content is representative sample data for the prototype. The official baseline is never mutated by working-state changes. Uploaded configurations must use the supported token contract and include the semantic IDs used by the built-in preview registry.
 The local Word reference documents are intentionally ignored by Git and remain workspace-only source material.
 
 ## Scripts

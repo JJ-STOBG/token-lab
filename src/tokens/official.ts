@@ -2,7 +2,7 @@ import type { ComponentDefinition, TokenConfiguration } from './token-types'
 
 export const officialConfiguration: TokenConfiguration = {
     schemaVersion: '1.0.0',
-    configurationId: 'stobg-marketing',
+    configurationId: 'sample-marketing',
     version: '2026.08',
     primitives: {
         'neutral-0': { id: 'neutral-0', type: 'primitive', group: 'Neutral', value: '#FFFFFF', label: 'White' },
@@ -18,7 +18,7 @@ export const officialConfiguration: TokenConfiguration = {
         'background-subtle': { id: 'background-subtle', type: 'semantic', category: 'Background', mapsTo: 'cerulean-100', label: 'Subtle', description: 'Quiet section background', allowedPrimitiveGroups: ['Neutral', 'Cerulean', 'Taupe'] },
         'text-primary': { id: 'text-primary', type: 'semantic', category: 'Text', mapsTo: 'neutral-950', label: 'Primary', description: 'Main body and heading text', allowedPrimitiveGroups: ['Neutral', 'Cerulean'] },
         'text-on-brand': { id: 'text-on-brand', type: 'semantic', category: 'Text', mapsTo: 'neutral-0', label: 'On brand', description: 'Text on dark brand surfaces', allowedPrimitiveGroups: ['Neutral'] },
-        'accent-brand': { id: 'accent-brand', type: 'semantic', category: 'Accent', mapsTo: 'cerulean-600', label: 'Brand accent', description: 'Primary STOBG brand signal', allowedPrimitiveGroups: ['Cerulean', 'Teal'] },
+        'accent-brand': { id: 'accent-brand', type: 'semantic', category: 'Accent', mapsTo: 'cerulean-600', label: 'Brand accent', description: 'Primary brand signal', allowedPrimitiveGroups: ['Cerulean', 'Teal'] },
         'action-primary': { id: 'action-primary', type: 'semantic', category: 'Action', mapsTo: 'orange-500', label: 'Primary action', description: 'High-attention calls to action', allowedPrimitiveGroups: ['Orange', 'Teal'] },
         'border-subtle': { id: 'border-subtle', type: 'semantic', category: 'Border', mapsTo: 'taupe-200', label: 'Subtle border', description: 'Quiet dividers and card edges', allowedPrimitiveGroups: ['Neutral', 'Taupe', 'Cerulean'] },
     },

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ChangeEvent } from 'react'
 import './App.css'
 import { evaluateAccessibility } from './accessibility/evaluator'
 import { accessibilityRules } from './accessibility/rules'
@@ -11,7 +11,8 @@ import { validateConfiguration } from './tokens/validator'
 import { PreviewWorkspace } from './previews/PreviewWorkspace'
 
 function App() {
-  const recoveryKey = 'stobg-design-system-lab:working:v1'
+  const recoveryKey = 'design-token-lab:working:v1'
+  const [baseline, setBaseline] = useState<TokenConfiguration>(officialConfiguration)
   const [working, setWorking] = useState<TokenConfiguration>(() => {
     const saved = localStorage.getItem(recoveryKey)
     if (!saved) return structuredClone(officialConfiguration)
@@ -32,8 +33,9 @@ function App() {
   const [comparisonEnabled, setComparisonEnabled] = useState(false)
   const [validationEnabled, setValidationEnabled] = useState(false)
   const [overrideReason, setOverrideReason] = useState('')
+  const [importMessage, setImportMessage] = useState('')
   const resolved = useMemo(() => resolveTokens(working), [working])
-  const changes = useMemo(() => diffConfigurations(officialConfiguration, working), [working])
+  const changes = useMemo(() => diffConfigurations(baseline, working), [baseline, working])
   const validation = useMemo(() => validateConfiguration(working), [working])
   const allAccessibilityResults = useMemo(() => evaluateAccessibility(accessibilityRules, resolved), [resolved])
   const accessibilityFailures = allAccessibilityResults.filter((result) => result.status === 'fail')
@@ -43,7 +45,7 @@ function App() {
   const selectedComponent = componentDefinitions.find((component) => component.id === selectedComponentId) ?? componentDefinitions[0]
   const filteredTokens = Object.values(working.semanticTokens).filter((token) =>
     `${token.label} ${token.category} ${token.id}`.toLowerCase().includes(query.toLowerCase()),
-  ).filter((token) => !changedOnly || token.mapsTo !== officialConfiguration.semanticTokens[token.id].mapsTo)
+  ).filter((token) => !changedOnly || token.mapsTo !== baseline.semanticTokens[token.id].mapsTo)
   const componentUsages = selectedComponent.tokenUsages.map((usage) => ({ usage, token: working.semanticTokens[usage.semanticTokenId], resolved: resolved[usage.semanticTokenId] }))
 
   useEffect(() => { localStorage.setItem(recoveryKey, JSON.stringify(working)) }, [recoveryKey, working])
@@ -74,7 +76,33 @@ function App() {
   function reset() {
     setHistory([])
     setFuture([])
-    setWorking(structuredClone(officialConfiguration))
+    setWorking(structuredClone(baseline))
+  }
+
+  function importTokens(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        const candidate = JSON.parse(String(reader.result)) as TokenConfiguration
+        const requiredIds = ['accent-brand', 'action-primary', 'background-subtle', 'background-canvas', 'text-primary', 'text-on-brand']
+        const result = validateConfiguration(candidate)
+        if (!result.valid) throw new Error(result.errors[0]?.message ?? 'Token configuration is invalid.')
+        const missing = requiredIds.filter((id) => !candidate.semanticTokens[id])
+        if (missing.length) throw new Error(`Preview-compatible tokens missing: ${missing.join(', ')}.`)
+        setBaseline(structuredClone(candidate))
+        setWorking(structuredClone(candidate))
+        setHistory([])
+        setFuture([])
+        setSelectedTokenId(requiredIds.find((id) => candidate.semanticTokens[id]) ?? Object.keys(candidate.semanticTokens)[0])
+        setImportMessage(`Loaded ${file.name}`)
+      } catch (error) {
+        setImportMessage(error instanceof Error ? error.message : 'Unable to load token configuration.')
+      }
+    }
+    reader.readAsText(file)
+    event.target.value = ''
   }
 
   function discardRecovery() {
@@ -92,7 +120,7 @@ function App() {
     if (!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())) return
     const content = artifacts[kind]
     const type = kind === 'json' ? 'application/json' : 'text/css'
-    const filename = kind === 'json' ? 'stobg-working-tokens.json' : 'stobg-working-tokens.css'
+    const filename = kind === 'json' ? 'working-tokens.json' : 'working-tokens.css'
     const url = URL.createObjectURL(new Blob([content], { type }))
     const link = document.createElement('a')
     link.href = url
@@ -104,10 +132,11 @@ function App() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div className="brand"><span className="brand-mark">S</span><div><strong>STOBG</strong><span>Design System Lab</span></div></div>
-        <div className="baseline"><span className="eyebrow">OFFICIAL BASELINE</span><strong>v{officialConfiguration.version}</strong><span className="status-dot" /> <span className="working-label">Working state {changes.length ? 'changed' : 'clean'}</span></div>
-        <div className="actions"><button onClick={undo} disabled={!history.length}>Undo</button><button onClick={redo} disabled={!future.length}>Redo</button><button onClick={reset} disabled={!changes.length}>Reset</button><button className={comparisonEnabled ? 'compare-button active' : 'compare-button'} onClick={() => setComparisonEnabled((enabled) => !enabled)}>Compare</button><button className={validationEnabled ? 'compare-button active' : 'compare-button'} onClick={() => setValidationEnabled((enabled) => !enabled)}>Validation</button><button className="export-button" onClick={() => copyArtifact('json')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Copy JSON</button><button className="export-button" onClick={() => copyArtifact('css')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Copy CSS</button><button className="export-button" onClick={() => downloadArtifact('json')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Export JSON</button><button className="export-button" onClick={() => downloadArtifact('css')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Export CSS</button></div>
+        <div className="brand"><span className="brand-mark">T</span><div><strong>TOKEN</strong><span>Design System Lab</span></div></div>
+        <div className="baseline"><span className="eyebrow">BASELINE</span><strong>v{baseline.version}</strong><span className="status-dot" /> <span className="working-label">Working state {changes.length ? 'changed' : 'clean'}</span></div>
+        <div className="actions"><label className="upload-button">Upload tokens<input type="file" accept="application/json,.json" onChange={importTokens} /></label><button onClick={undo} disabled={!history.length}>Undo</button><button onClick={redo} disabled={!future.length}>Redo</button><button onClick={reset} disabled={!changes.length}>Reset</button><button className={comparisonEnabled ? 'compare-button active' : 'compare-button'} onClick={() => setComparisonEnabled((enabled) => !enabled)}>Compare</button><button className={validationEnabled ? 'compare-button active' : 'compare-button'} onClick={() => setValidationEnabled((enabled) => !enabled)}>Validation</button><button className="export-button" onClick={() => copyArtifact('json')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Copy JSON</button><button className="export-button" onClick={() => copyArtifact('css')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Copy CSS</button><button className="export-button" onClick={() => downloadArtifact('json')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Export JSON</button><button className="export-button" onClick={() => downloadArtifact('css')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Export CSS</button></div>
       </header>
+      {importMessage && <div className="import-message" role="status">{importMessage}</div>}
       {recovered && <div className="recovery-banner" role="status"><span>Recovered working state from this browser.</span><button onClick={discardRecovery}>Discard recovery</button></div>}
 
       <main className="workspace">
@@ -116,7 +145,7 @@ function App() {
           <label className="search"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search tokens" aria-label="Search tokens" /></label>
           <div className="filter-row"><button className={!changedOnly ? 'filter active' : 'filter'} onClick={() => setChangedOnly(false)}>All tokens</button><button className={changedOnly ? 'filter active' : 'filter'} onClick={() => setChangedOnly(true)}>Changed</button></div>
           <div className="token-list">
-            {filteredTokens.map((token) => { const changed = token.mapsTo !== officialConfiguration.semanticTokens[token.id].mapsTo; return <button key={token.id} className={`token-row ${selectedTokenId === token.id ? 'selected' : ''}`} onClick={() => setSelectedTokenId(token.id)}><span className="swatch" style={{ backgroundColor: resolved[token.id].value }} /><span className="token-copy"><strong>{token.label}</strong><small>{token.category} / {token.id}</small></span>{changed && <span className="changed" aria-label="Changed">●</span>}</button> })}
+            {filteredTokens.map((token) => { const changed = token.mapsTo !== baseline.semanticTokens[token.id].mapsTo; return <button key={token.id} className={`token-row ${selectedTokenId === token.id ? 'selected' : ''}`} onClick={() => setSelectedTokenId(token.id)}><span className="swatch" style={{ backgroundColor: resolved[token.id].value }} /><span className="token-copy"><strong>{token.label}</strong><small>{token.category} / {token.id}</small></span>{changed && <span className="changed" aria-label="Changed">●</span>}</button> })}
           </div>
           <div className="panel-foot"><span className="legend-dot changed" /> Working changes <strong>{changes.length}</strong></div>
         </aside>

@@ -1,7 +1,7 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://stobg.local/schemas/token-configuration.schema.json",
-    "title": "STOBG Token Configuration",
+    "$id": "https://token-lab.local/schemas/token-configuration.schema.json",
+    "title": "Design Token Lab Token Configuration",
     "type": "object",
     "additionalProperties": false,
     "required": [

@@ -43,7 +43,7 @@ describe('token domain', () => {
         const first = exportConfiguration(working)
         const second = exportConfiguration(working)
         expect(first).toEqual(second)
-        expect(first.css.indexOf('--stobg-primitives-')).toBeLessThan(first.css.indexOf('--stobg-semantic-'))
+        expect(first.css.indexOf('--token-lab-primitives-')).toBeLessThan(first.css.indexOf('--token-lab-semantic-'))
         expect(exportConfiguration(working, { overrideReason: 'Reviewed by design owner', accessibilityFailCount: 1 }).manifest.validationSummary.overrideReason).toBe('Reviewed by design owner')
         expect(exportConfiguration(working, { accessibilityFailCount: 1 }).manifest.validationSummary.accessibilityFailCount).toBe(1)
     })

@@ -19,7 +19,7 @@ npm run dev
 - Registered preview component usage data.
 - Pure token resolution and official-versus-working diff functions.
 - Responsive lab shell with token browser, live homepage preview, and component inspector.
-- Working mapping changes with undo, redo, reset, live status messaging, and JSON download.
+- Working mapping changes with undo, redo, reset, live status messaging, and JSON/CSS downloads.
 - Configuration validation with blocking reference/color/group errors and warnings.
 - WCAG contrast ratio utility and deterministic primitive-first JSON/CSS export.
 - Registered accessibility rules evaluated against the current working resolution, with measured ratios and pass/fail status in the inspector.
@@ -35,21 +35,23 @@ npm run dev
 - Bundled primitive scales across Neutral, Cerulean, Orange, Teal, Taupe, and Burgundy, with semantic allowed-group filtering retained.
 - Page-specific registered components for Markets, Project Detail, and Careers, plus selected-token dependency impact in the lab shell.
 - Page-specific automated accessibility rules and export manifests carrying actual validation and contrast-failure counts.
-- Focused Vitest coverage for resolution, validation, contrast, diffs, and export ordering.
+- Focused Vitest coverage for resolution, validation, contrast, diffs, export ordering, and CSS import round-trips.
 
 The included token and preview content is representative sample data for the prototype. The official baseline is never mutated by working-state changes. Uploaded configurations must use the supported token contract and include the semantic IDs used by the built-in preview registry.
 The local Word reference documents are intentionally ignored by Git and remain workspace-only source material.
 
 ## Uploading Tokens
 
-Use **Upload tokens** in the header to load a JSON configuration. A valid upload must contain:
+Use **Upload tokens** in the header to load a JSON or CSS configuration. A valid JSON upload must contain:
 
 - `schemaVersion`, `configurationId`, and `version`
 - A `primitives` object containing uppercase six-digit hex values such as `#0067A5`
 - A `semanticTokens` object where each token maps to an existing primitive
 - These preview-compatible semantic IDs: `accent-brand`, `action-primary`, `background-subtle`, `background-canvas`, `text-primary`, and `text-on-brand`
 
-See [examples/tokens.example.json](examples/tokens.example.json) for a complete starter file. Display labels and descriptions can be changed; IDs are the stable references used by previews and rules. CSS uploads support the generated `--token-lab-*` format and namespaced primitive/semantic CSS such as `--stobg-primitives-*` and `--stobg-semantic-*`. Semantic aliases and camelCase scale names are normalized during import; unsupported values such as 8-digit hex remain excluded by validation.
+See [examples/tokens.example.json](examples/tokens.example.json) for a complete starter file. Display labels and descriptions can be changed; IDs are the stable references used by previews and rules.
+
+CSS uploads support the generated `--token-lab-*` format and namespaced CSS such as `--stobg-primitives-*`, `--stobg-semantic-*`, `--stobg-functional-*`, and `--stobg-brand-*`. Primitive values must be six-digit hex. Semantic aliases and camelCase names are normalized during import. Semantic-to-semantic aliases are resolved to primitives. Unsupported values such as 8-digit hex are rejected by validation.
 
 An accepted upload becomes the new immutable baseline. The working state starts as a separate copy, so edits, undo, redo, reset, comparison, validation, and exports operate on the uploaded configuration. Invalid files are rejected without replacing the current state.
 
@@ -73,7 +75,7 @@ The bundled sample configuration is used as the fallback baseline. Browser recov
 | Area | Status |
 | --- | --- |
 | Token editing, resolution, history, comparison | Implemented |
-| JSON upload and runtime schema validation | Implemented |
+| JSON/CSS upload and runtime schema validation | Implemented |
 | Homepage, Markets, Project Detail, Careers, Contact previews | Implemented |
 | Accessibility contrast rules and export override | Implemented |
 | Deterministic JSON/CSS export | Implemented |

@@ -11,6 +11,17 @@ import { validateConfiguration } from './tokens/validator'
 import { importCssConfiguration } from './tokens/css-importer'
 import { PreviewWorkspace } from './previews/PreviewWorkspace'
 
+const previewRequiredIds = ['accent-brand', 'action-primary', 'background-subtle', 'background-canvas', 'text-primary', 'text-on-brand']
+
+interface PendingImport {
+  fileName: string
+  candidate: TokenConfiguration | null
+  error: string
+  errors: string[]
+  warnings: string[]
+  missingIds: string[]
+}
+
 function App() {
   const recoveryKey = 'design-token-lab:working:v1'
   const [baseline, setBaseline] = useState<TokenConfiguration>(officialConfiguration)
@@ -35,6 +46,7 @@ function App() {
   const [validationEnabled, setValidationEnabled] = useState(false)
   const [overrideReason, setOverrideReason] = useState('')
   const [importMessage, setImportMessage] = useState('')
+  const [pendingImport, setPendingImport] = useState<PendingImport | null>(null)
   const resolved = useMemo(() => resolveTokens(working), [working])
   const changes = useMemo(() => diffConfigurations(baseline, working), [baseline, working])
   const validation = useMemo(() => validateConfiguration(working), [working])
@@ -89,23 +101,33 @@ function App() {
         const candidate = file.name.toLowerCase().endsWith('.css')
           ? importCssConfiguration(String(reader.result), file.name.replace(/\.css$/i, ''))
           : JSON.parse(String(reader.result)) as TokenConfiguration
-        const requiredIds = ['accent-brand', 'action-primary', 'background-subtle', 'background-canvas', 'text-primary', 'text-on-brand']
         const result = validateConfiguration(candidate)
-        if (!result.valid) throw new Error(result.errors[0]?.message ?? 'Token configuration is invalid.')
-        const missing = requiredIds.filter((id) => !candidate.semanticTokens[id])
-        if (missing.length) throw new Error(`Preview-compatible tokens missing: ${missing.join(', ')}.`)
-        setBaseline(structuredClone(candidate))
-        setWorking(structuredClone(candidate))
-        setHistory([])
-        setFuture([])
-        setSelectedTokenId(requiredIds.find((id) => candidate.semanticTokens[id]) ?? Object.keys(candidate.semanticTokens)[0])
-        setImportMessage(`Loaded ${file.name}`)
+        setPendingImport({
+          fileName: file.name,
+          candidate,
+          error: '',
+          errors: result.errors.map((issue) => issue.message),
+          warnings: result.warnings.map((issue) => issue.message),
+          missingIds: previewRequiredIds.filter((id) => !candidate.semanticTokens[id]),
+        })
       } catch (error) {
-        setImportMessage(error instanceof Error ? error.message : 'Unable to load token configuration.')
+        setPendingImport({ fileName: file.name, candidate: null, error: error instanceof Error ? error.message : 'Unable to parse token configuration.', errors: [], warnings: [], missingIds: [] })
       }
     }
     reader.readAsText(file)
     event.target.value = ''
+  }
+
+  function applyImport() {
+    if (!pendingImport?.candidate || pendingImport.errors.length || pendingImport.missingIds.length) return
+    const candidate = pendingImport.candidate
+    setBaseline(structuredClone(candidate))
+    setWorking(structuredClone(candidate))
+    setHistory([])
+    setFuture([])
+    setSelectedTokenId(previewRequiredIds.find((id) => candidate.semanticTokens[id]) ?? Object.keys(candidate.semanticTokens)[0])
+    setImportMessage(`Loaded ${pendingImport.fileName}`)
+    setPendingImport(null)
   }
 
   function discardRecovery() {
@@ -141,6 +163,7 @@ function App() {
       </header>
       {importMessage && <div className="import-message" role="status">{importMessage}</div>}
       {recovered && <div className="recovery-banner" role="status"><span>Recovered working state from this browser.</span><button onClick={discardRecovery}>Discard recovery</button></div>}
+      {pendingImport && <div className="import-review-backdrop"><section className="import-review" role="dialog" aria-modal="true" aria-labelledby="import-review-title"><div className="import-review-head"><div><span className="eyebrow">IMPORT REVIEW</span><h2 id="import-review-title">{pendingImport.fileName}</h2></div><button className="close-comparison" onClick={() => setPendingImport(null)} aria-label="Cancel import">×</button></div>{pendingImport.error ? <div className="import-error"><strong>Could not read this file</strong><p>{pendingImport.error}</p></div> : pendingImport.candidate && <><div className="import-stats"><div><strong>{Object.keys(pendingImport.candidate.primitives).length}</strong><span>primitives</span></div><div><strong>{Object.keys(pendingImport.candidate.semanticTokens).length}</strong><span>semantic tokens</span></div><div><strong>{pendingImport.warnings.length}</strong><span>warnings</span></div></div>{pendingImport.errors.length > 0 && <div className="import-error"><strong>{pendingImport.errors.length} blocking issue{pendingImport.errors.length === 1 ? '' : 's'}</strong>{pendingImport.errors.slice(0, 3).map((error) => <p key={error}>{error}</p>)}</div>}{pendingImport.missingIds.length > 0 && <div className="import-error"><strong>Preview compatibility incomplete</strong><p>Missing: {pendingImport.missingIds.join(', ')}</p></div>}{pendingImport.errors.length === 0 && pendingImport.missingIds.length === 0 && <div className="import-ready"><strong>Ready to apply</strong><p>This will replace the current baseline and reset working changes.</p></div>}<div className="import-review-actions"><button onClick={() => setPendingImport(null)}>Cancel</button><button className="export-button" onClick={applyImport} disabled={pendingImport.errors.length > 0 || pendingImport.missingIds.length > 0}>Apply configuration</button></div></>}</section></div>}
 
       <main className="workspace">
         <aside className="token-panel" aria-label="Token browser">

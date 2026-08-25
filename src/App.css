@@ -135,6 +135,21 @@
   text-align: center;
   font-size: 11px;
 }
+.import-review-backdrop { position: fixed; z-index: 10; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(20,33,43,.48); }
+.import-review { width: min(500px, 100%); padding: 24px; background: var(--paper); border: 1px solid var(--line); box-shadow: 0 20px 60px rgba(20,33,43,.25); }
+.import-review-head { display: flex; justify-content: space-between; }
+.import-review-head h2 { margin-top: 7px; max-width: 390px; overflow-wrap: anywhere; }
+.import-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin: 24px 0 16px; background: var(--line); }
+.import-stats div { display: grid; gap: 2px; padding: 13px; background: #fff; }
+.import-stats strong { font-size: 22px; }
+.import-stats span { color: var(--muted); font-size: 10px; }
+.import-error, .import-ready { display: grid; gap: 7px; margin-top: 12px; padding: 13px; font-size: 10px; line-height: 1.45; }
+.import-error { border-left: 3px solid #b34c3d; background: #fff0ed; color: #8d382f; }
+.import-ready { border-left: 3px solid var(--teal); background: #edf8f4; color: #17675f; }
+.import-error p, .import-ready p { color: var(--muted); }
+.import-review-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+.import-review-actions button { border: 1px solid var(--line); padding: 9px 12px; background: transparent; color: var(--ink); font-size: 10px; }
+.import-review-actions .export-button { background: var(--orange); border-color: var(--orange); }
 
 .actions button,
 .filter,

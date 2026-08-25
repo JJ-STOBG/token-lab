@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type DragEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent } from 'react'
 import './App.css'
 import { evaluateAccessibility } from './accessibility/evaluator'
 import { accessibilityRules } from './accessibility/rules'
@@ -27,7 +27,16 @@ interface PendingImport {
 
 function App() {
   const recoveryKey = 'design-token-lab:working:v1'
-  const [baseline, setBaseline] = useState<TokenConfiguration>(officialConfiguration)
+  const [baseline, setBaseline] = useState<TokenConfiguration>(() => {
+    const saved = localStorage.getItem(recoveryKey)
+    if (!saved) return officialConfiguration
+    try {
+      const recovered = JSON.parse(saved) as TokenConfiguration
+      return validateConfiguration(recovered).valid ? recovered : officialConfiguration
+    } catch {
+      return officialConfiguration
+    }
+  })
   const [working, setWorking] = useState<TokenConfiguration>(() => {
     const saved = localStorage.getItem(recoveryKey)
     if (!saved) return structuredClone(officialConfiguration)
@@ -51,6 +60,8 @@ function App() {
   const [importMessage, setImportMessage] = useState('')
   const [pendingImport, setPendingImport] = useState<PendingImport | null>(null)
   const [draggingFile, setDraggingFile] = useState(false)
+  const [wizardOpen, setWizardOpen] = useState(true)
+  const uploadInputRef = useRef<HTMLInputElement>(null)
   const resolved = useMemo(() => resolveTokens(working), [working])
   const changes = useMemo(() => diffConfigurations(baseline, working), [baseline, working])
   const validation = useMemo(() => validateConfiguration(working), [working])
@@ -139,6 +150,11 @@ function App() {
     event.target.value = ''
   }
 
+  function openUploadWizardChoice() {
+    setWizardOpen(false)
+    uploadInputRef.current?.click()
+  }
+
   function handleDragOver(event: DragEvent<HTMLDivElement>) {
     event.preventDefault()
     event.dataTransfer.dropEffect = 'copy'
@@ -197,9 +213,10 @@ function App() {
       <header className="topbar">
         <div className="brand"><span className="brand-mark">T</span><div><strong>TOKEN</strong><span>Design System Lab</span></div></div>
         <div className="baseline"><span className="eyebrow">BASELINE</span><strong>v{baseline.version}</strong><span className="status-dot" /> <span className="working-label">Working state {changes.length ? 'changed' : 'clean'}</span></div>
-        <div className="actions"><label className="upload-button">Upload tokens<input type="file" accept="application/json,.json,text/css,.css" onChange={importTokens} /></label><button onClick={undo} disabled={!history.length}>Undo</button><button onClick={redo} disabled={!future.length}>Redo</button><button onClick={reset} disabled={!changes.length}>Reset</button><button className={comparisonEnabled ? 'compare-button active' : 'compare-button'} onClick={() => setComparisonEnabled((enabled) => !enabled)}>Compare</button><button className={validationEnabled ? 'compare-button active' : 'compare-button'} onClick={() => setValidationEnabled((enabled) => !enabled)}>Validation</button><button className="export-button" onClick={() => copyArtifact('json')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Copy JSON</button><button className="export-button" onClick={() => copyArtifact('css')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Copy CSS</button><button className="export-button" onClick={() => downloadArtifact('json')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Export JSON</button><button className="export-button" onClick={() => downloadArtifact('css')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Export CSS</button></div>
+        <div className="actions"><label className="upload-button">Upload tokens<input ref={uploadInputRef} type="file" accept="application/json,.json,text/css,.css" onChange={importTokens} /></label><button onClick={undo} disabled={!history.length}>Undo</button><button onClick={redo} disabled={!future.length}>Redo</button><button onClick={reset} disabled={!changes.length}>Reset</button><button className={comparisonEnabled ? 'compare-button active' : 'compare-button'} onClick={() => setComparisonEnabled((enabled) => !enabled)}>Compare</button><button className={validationEnabled ? 'compare-button active' : 'compare-button'} onClick={() => setValidationEnabled((enabled) => !enabled)}>Validation</button><button className="export-button" onClick={() => copyArtifact('json')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Copy JSON</button><button className="export-button" onClick={() => copyArtifact('css')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Copy CSS</button><button className="export-button" onClick={() => downloadArtifact('json')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Export JSON</button><button className="export-button" onClick={() => downloadArtifact('css')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Export CSS</button></div>
       </header>
       {draggingFile && <div className="drop-overlay" role="status"><div className="drop-target"><strong>Drop token file to import</strong><span>JSON or CSS · maximum 2 MB</span></div></div>}
+      {wizardOpen && <div className="wizard-backdrop"><section className="start-wizard" role="dialog" aria-modal="true" aria-labelledby="start-wizard-title"><div className="wizard-mark">T</div><span className="eyebrow">WELCOME TO TOKEN LAB</span><h2 id="start-wizard-title">How would you like to begin?</h2><p>Bring in an existing system or explore the bundled token sandbox.</p><div className="wizard-options"><button onClick={openUploadWizardChoice}><strong>Upload tokens</strong><span>Import a JSON token configuration</span><b>→</b></button><button onClick={openUploadWizardChoice}><strong>Upload styles</strong><span>Import a CSS variables file</span><b>→</b></button><button onClick={() => setWizardOpen(false)}><strong>Open the sandbox</strong><span>Start with the bundled sample system</span><b>→</b></button></div><button className="wizard-skip" onClick={() => setWizardOpen(false)}>Continue to the lab</button></section></div>}
       {importMessage && <div className="import-message" role="status">{importMessage}</div>}
       {recovered && <div className="recovery-banner" role="status"><span>Recovered working state from this browser.</span><button onClick={discardRecovery}>Discard recovery</button></div>}
       {pendingImport && <div className="import-review-backdrop"><section className="import-review" role="dialog" aria-modal="true" aria-labelledby="import-review-title"><div className="import-review-head"><div><span className="eyebrow">IMPORT REVIEW</span><h2 id="import-review-title">{pendingImport.fileName}</h2></div><button className="close-comparison" onClick={() => setPendingImport(null)} aria-label="Cancel import">×</button></div>{pendingImport.error ? <div className="import-error"><strong>Could not read this file</strong><p>{pendingImport.error}</p></div> : pendingImport.candidate && <><div className="import-stats"><div><strong>{Object.keys(pendingImport.candidate.primitives).length}</strong><span>primitives</span></div><div><strong>{Object.keys(pendingImport.candidate.semanticTokens).length}</strong><span>semantic tokens</span></div><div><strong>{pendingImport.warnings.length}</strong><span>warnings</span></div></div>{pendingImport.errors.length > 0 && <div className="import-error"><strong>{pendingImport.errors.length} blocking issue{pendingImport.errors.length === 1 ? '' : 's'}</strong>{pendingImport.errors.slice(0, 3).map((error) => <p key={error}>{error}</p>)}</div>}{pendingImport.genericMode && pendingImport.errors.length === 0 && <div className="import-ready generic-ready"><strong>Generic preview mode</strong><p>This configuration has its own token vocabulary. The token gallery will be available after applying.</p></div>}{!pendingImport.genericMode && pendingImport.errors.length === 0 && <div className="import-ready"><strong>Built-in previews ready</strong><p>This will replace the current baseline and reset working changes.</p></div>}<div className="import-review-actions"><button onClick={() => setPendingImport(null)}>Cancel</button><button className="export-button" onClick={applyImport} disabled={pendingImport.errors.length > 0}>Apply configuration</button></div></>}</section></div>}

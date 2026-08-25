@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent } from 'react'
+import { useEffect, useMemo, useState, type ChangeEvent, type DragEvent } from 'react'
 import './App.css'
 import { evaluateAccessibility } from './accessibility/evaluator'
 import { accessibilityRules } from './accessibility/rules'
@@ -13,6 +13,7 @@ import { PreviewWorkspace } from './previews/PreviewWorkspace'
 import { GenericPreview } from './previews/GenericPreview'
 
 const previewRequiredIds = ['accent-brand', 'action-primary', 'background-subtle', 'background-canvas', 'text-primary', 'text-on-brand']
+const maxImportSize = 2 * 1024 * 1024
 
 interface PendingImport {
   fileName: string
@@ -49,6 +50,7 @@ function App() {
   const [overrideReason, setOverrideReason] = useState('')
   const [importMessage, setImportMessage] = useState('')
   const [pendingImport, setPendingImport] = useState<PendingImport | null>(null)
+  const [draggingFile, setDraggingFile] = useState(false)
   const resolved = useMemo(() => resolveTokens(working), [working])
   const changes = useMemo(() => diffConfigurations(baseline, working), [baseline, working])
   const validation = useMemo(() => validateConfiguration(working), [working])
@@ -95,13 +97,21 @@ function App() {
     setWorking(structuredClone(baseline))
   }
 
-  function importTokens(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
+  function readTokenFile(file: File) {
     if (!file) return
+    const extension = file.name.toLowerCase().split('.').pop()
+    if (!['json', 'css'].includes(extension ?? '')) {
+      setPendingImport({ fileName: file.name, candidate: null, error: 'Choose a JSON or CSS token file.', errors: [], warnings: [], missingIds: [], genericMode: false })
+      return
+    }
+    if (file.size > maxImportSize) {
+      setPendingImport({ fileName: file.name, candidate: null, error: 'This file is larger than the 2 MB upload limit.', errors: [], warnings: [], missingIds: [], genericMode: false })
+      return
+    }
     const reader = new FileReader()
     reader.onload = () => {
       try {
-        const candidate = file.name.toLowerCase().endsWith('.css')
+        const candidate = extension === 'css'
           ? importCssConfiguration(String(reader.result), file.name.replace(/\.css$/i, ''))
           : JSON.parse(String(reader.result)) as TokenConfiguration
         const result = validateConfiguration(candidate)
@@ -118,8 +128,32 @@ function App() {
         setPendingImport({ fileName: file.name, candidate: null, error: error instanceof Error ? error.message : 'Unable to parse token configuration.', errors: [], warnings: [], missingIds: [], genericMode: false })
       }
     }
+    reader.onerror = () => setPendingImport({ fileName: file.name, candidate: null, error: 'Unable to read this file. Try it again or choose another file.', errors: [], warnings: [], missingIds: [], genericMode: false })
     reader.readAsText(file)
+  }
+
+  function importTokens(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    readTokenFile(file)
     event.target.value = ''
+  }
+
+  function handleDragOver(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'copy'
+    setDraggingFile(true)
+  }
+
+  function handleDragLeave(event: DragEvent<HTMLDivElement>) {
+    if (event.currentTarget === event.target) setDraggingFile(false)
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault()
+    setDraggingFile(false)
+    const file = event.dataTransfer.files[0]
+    if (file) readTokenFile(file)
   }
 
   function applyImport() {
@@ -159,12 +193,13 @@ function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
       <header className="topbar">
         <div className="brand"><span className="brand-mark">T</span><div><strong>TOKEN</strong><span>Design System Lab</span></div></div>
         <div className="baseline"><span className="eyebrow">BASELINE</span><strong>v{baseline.version}</strong><span className="status-dot" /> <span className="working-label">Working state {changes.length ? 'changed' : 'clean'}</span></div>
         <div className="actions"><label className="upload-button">Upload tokens<input type="file" accept="application/json,.json,text/css,.css" onChange={importTokens} /></label><button onClick={undo} disabled={!history.length}>Undo</button><button onClick={redo} disabled={!future.length}>Redo</button><button onClick={reset} disabled={!changes.length}>Reset</button><button className={comparisonEnabled ? 'compare-button active' : 'compare-button'} onClick={() => setComparisonEnabled((enabled) => !enabled)}>Compare</button><button className={validationEnabled ? 'compare-button active' : 'compare-button'} onClick={() => setValidationEnabled((enabled) => !enabled)}>Validation</button><button className="export-button" onClick={() => copyArtifact('json')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Copy JSON</button><button className="export-button" onClick={() => copyArtifact('css')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Copy CSS</button><button className="export-button" onClick={() => downloadArtifact('json')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Export JSON</button><button className="export-button" onClick={() => downloadArtifact('css')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Export CSS</button></div>
       </header>
+      {draggingFile && <div className="drop-overlay" role="status"><div className="drop-target"><strong>Drop token file to import</strong><span>JSON or CSS · maximum 2 MB</span></div></div>}
       {importMessage && <div className="import-message" role="status">{importMessage}</div>}
       {recovered && <div className="recovery-banner" role="status"><span>Recovered working state from this browser.</span><button onClick={discardRecovery}>Discard recovery</button></div>}
       {pendingImport && <div className="import-review-backdrop"><section className="import-review" role="dialog" aria-modal="true" aria-labelledby="import-review-title"><div className="import-review-head"><div><span className="eyebrow">IMPORT REVIEW</span><h2 id="import-review-title">{pendingImport.fileName}</h2></div><button className="close-comparison" onClick={() => setPendingImport(null)} aria-label="Cancel import">×</button></div>{pendingImport.error ? <div className="import-error"><strong>Could not read this file</strong><p>{pendingImport.error}</p></div> : pendingImport.candidate && <><div className="import-stats"><div><strong>{Object.keys(pendingImport.candidate.primitives).length}</strong><span>primitives</span></div><div><strong>{Object.keys(pendingImport.candidate.semanticTokens).length}</strong><span>semantic tokens</span></div><div><strong>{pendingImport.warnings.length}</strong><span>warnings</span></div></div>{pendingImport.errors.length > 0 && <div className="import-error"><strong>{pendingImport.errors.length} blocking issue{pendingImport.errors.length === 1 ? '' : 's'}</strong>{pendingImport.errors.slice(0, 3).map((error) => <p key={error}>{error}</p>)}</div>}{pendingImport.genericMode && pendingImport.errors.length === 0 && <div className="import-ready generic-ready"><strong>Generic preview mode</strong><p>This configuration has its own token vocabulary. The token gallery will be available after applying.</p></div>}{!pendingImport.genericMode && pendingImport.errors.length === 0 && <div className="import-ready"><strong>Built-in previews ready</strong><p>This will replace the current baseline and reset working changes.</p></div>}<div className="import-review-actions"><button onClick={() => setPendingImport(null)}>Cancel</button><button className="export-button" onClick={applyImport} disabled={pendingImport.errors.length > 0}>Apply configuration</button></div></>}</section></div>}

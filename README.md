@@ -28,6 +28,7 @@ npm run dev
 - Runtime Ajv 2020 schema validation with path-specific failures for malformed source or recovered data.
 - Deterministic dependency graph for semantic-token-to-component relationships.
 - Functional local previews for Homepage, Markets, Project Detail, Careers, and Contact.
+- Page-specific registered components for Markets, Project Detail, and Careers, plus selected-token dependency impact in the lab shell.
 - Focused Vitest coverage for resolution, validation, contrast, diffs, and export ordering.
 
 The included token and preview content is representative sample data for the prototype. The official baseline is never mutated by working-state changes.
@@ -41,4 +42,4 @@ The local Word reference documents are intentionally ignored by Git and remain w
 
 ## Next implementation slice
 
-Register page-specific component usages, expose dependency impact in the inspector, and broaden component/integration coverage.
+Add complete rule coverage for page-specific components, broaden component/integration coverage, and perform the final manual accessibility pass.

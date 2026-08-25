@@ -56,7 +56,7 @@ describe('token domain', () => {
 
     it('builds stable component dependencies from registered usages', () => {
         const graph = buildDependencyGraph(componentDefinitions)
-        expect(graph.bySemanticToken['action-primary']).toEqual(['contact-form', 'homepage-hero'])
+        expect(graph.bySemanticToken['action-primary']).toEqual(['careers-hero', 'contact-form', 'homepage-hero', 'markets-hero'])
         expect(graph.byComponent['homepage-hero']).toEqual(['accent-brand', 'action-primary', 'text-on-brand'])
     })
 })

@@ -46,4 +46,24 @@ export const componentDefinitions: ComponentDefinition[] = [
             { id: 'form-submit', semanticTokenId: 'action-primary', property: 'background', description: 'Submit button' },
         ]
     },
+    {
+        id: 'markets-hero', name: 'Markets hero', previewId: 'markets', tokenUsages: [
+            { id: 'markets-surface', semanticTokenId: 'accent-brand', property: 'background', description: 'Markets hero surface' },
+            { id: 'markets-heading', semanticTokenId: 'text-on-brand', property: 'text', description: 'Markets heading' },
+            { id: 'markets-cta', semanticTokenId: 'action-primary', property: 'background', description: 'Markets CTA' },
+        ]
+    },
+    {
+        id: 'project-detail-hero', name: 'Project detail hero', previewId: 'project-detail', tokenUsages: [
+            { id: 'project-detail-surface', semanticTokenId: 'accent-brand', property: 'background', description: 'Project detail surface' },
+            { id: 'project-detail-heading', semanticTokenId: 'text-on-brand', property: 'text', description: 'Project detail heading' },
+        ]
+    },
+    {
+        id: 'careers-hero', name: 'Careers hero', previewId: 'careers', tokenUsages: [
+            { id: 'careers-surface', semanticTokenId: 'accent-brand', property: 'background', description: 'Careers hero surface' },
+            { id: 'careers-heading', semanticTokenId: 'text-on-brand', property: 'text', description: 'Careers heading' },
+            { id: 'careers-cta', semanticTokenId: 'action-primary', property: 'background', description: 'Careers CTA' },
+        ]
+    },
 ]

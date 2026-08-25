@@ -56,6 +56,13 @@ describe('token domain', () => {
         expect(validateSourceSchema(imported).length).toBe(0)
     })
 
+    it('imports namespaced CSS scales and semantic aliases', () => {
+        const imported = importCssConfiguration(`:root { --stobg-primitives-neutral-1000: #030606; --stobg-primitives-cerulean-500: #467B9D; --stobg-semantic-accent-default: var(--stobg-primitives-cerulean-500); --stobg-semantic-background-accentSubtle: var(--stobg-primitives-cerulean-500); --stobg-semantic-text-inverse: var(--stobg-primitives-neutral-1000); }`)
+        expect(imported.primitives['cerulean-500'].value).toBe('#467B9D')
+        expect(imported.semanticTokens['accent-brand'].mapsTo).toBe('cerulean-500')
+        expect(imported.semanticTokens['background-subtle'].mapsTo).toBe('cerulean-500')
+    })
+
     it('evaluates registered contrast rules from resolved tokens', () => {
         const results = evaluateAccessibility(accessibilityRules, resolveTokens(officialConfiguration))
         expect(results).toHaveLength(7)

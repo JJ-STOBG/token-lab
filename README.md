@@ -49,7 +49,7 @@ Use **Upload tokens** in the header to load a JSON configuration. A valid upload
 - A `semanticTokens` object where each token maps to an existing primitive
 - These preview-compatible semantic IDs: `accent-brand`, `action-primary`, `background-subtle`, `background-canvas`, `text-primary`, and `text-on-brand`
 
-See [examples/tokens.example.json](examples/tokens.example.json) for a complete starter file. Display labels and descriptions can be changed; IDs are the stable references used by previews and rules. CSS uploads must use the generated `--token-lab-primitives-*` and `--token-lab-semantic-*` custom property format.
+See [examples/tokens.example.json](examples/tokens.example.json) for a complete starter file. Display labels and descriptions can be changed; IDs are the stable references used by previews and rules. CSS uploads support the generated `--token-lab-*` format and namespaced primitive/semantic CSS such as `--stobg-primitives-*` and `--stobg-semantic-*`. Semantic aliases and camelCase scale names are normalized during import; unsupported values such as 8-digit hex remain excluded by validation.
 
 An accepted upload becomes the new immutable baseline. The working state starts as a separate copy, so edits, undo, redo, reset, comparison, validation, and exports operate on the uploaded configuration. Invalid files are rejected without replacing the current state.
 

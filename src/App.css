@@ -417,6 +417,8 @@
   border-right: 1px solid var(--line);
   display: flex;
   flex-direction: column;
+  height: calc(100vh - 76px);
+  min-height: 0;
 }
 
 .panel-heading,
@@ -496,7 +498,11 @@ h3 {
 }
 
 .token-list {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
+  scrollbar-color: #9da8aa transparent;
+  scrollbar-width: thin;
 }
 
 .token-row {
@@ -1156,6 +1162,10 @@ h3 {
 
 .inspector {
   border-left: 1px solid var(--line);
+  max-height: calc(100vh - 76px);
+  overflow-y: auto;
+  scrollbar-color: #9da8aa transparent;
+  scrollbar-width: thin;
 }
 
 .inspect-icon {
@@ -1581,6 +1591,8 @@ select:focus-visible {
     grid-column: 1 / -1;
     border: 0;
     border-top: 1px solid var(--line);
+    max-height: none;
+    overflow: visible;
   }
 
   .usage-list {
@@ -1616,6 +1628,7 @@ select:focus-visible {
   }
 
   .token-panel {
+    height: 70vh;
     min-height: 330px;
     border: 0;
     border-bottom: 1px solid var(--line);

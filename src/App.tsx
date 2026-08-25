@@ -14,6 +14,7 @@ import { GenericPreview } from './previews/GenericPreview'
 
 const previewRequiredIds = ['accent-brand', 'action-primary', 'background-subtle', 'background-canvas', 'text-primary', 'text-on-brand']
 const maxImportSize = 2 * 1024 * 1024
+const wizardKey = 'design-token-lab:started:v1'
 
 interface PendingImport {
   fileName: string
@@ -23,6 +24,40 @@ interface PendingImport {
   warnings: string[]
   missingIds: string[]
   genericMode: boolean
+}
+
+function useDialogFocus(open: boolean, dialogRef: React.RefObject<HTMLElement | null>, onClose: () => void) {
+  const closeRef = useRef(onClose)
+  useEffect(() => { closeRef.current = onClose }, [onClose])
+  useEffect(() => {
+    if (!open || !dialogRef.current) return
+    const dialog = dialogRef.current
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const focusable = dialog.querySelectorAll<HTMLElement>('button, input, select, textarea, [href], [tabindex]:not([tabindex="-1"])')
+    focusable[0]?.focus()
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        closeRef.current()
+        return
+      }
+      if (event.key !== 'Tab' || focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+    dialog.addEventListener('keydown', handleKeyDown)
+    return () => {
+      dialog.removeEventListener('keydown', handleKeyDown)
+      previous?.focus()
+    }
+  }, [dialogRef, open])
 }
 
 function App() {
@@ -60,8 +95,13 @@ function App() {
   const [importMessage, setImportMessage] = useState('')
   const [pendingImport, setPendingImport] = useState<PendingImport | null>(null)
   const [draggingFile, setDraggingFile] = useState(false)
-  const [wizardOpen, setWizardOpen] = useState(true)
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
+  const [wizardOpen, setWizardOpen] = useState(() => localStorage.getItem(wizardKey) !== 'true')
   const uploadInputRef = useRef<HTMLInputElement>(null)
+  const wizardRef = useRef<HTMLElement>(null)
+  const importReviewRef = useRef<HTMLElement>(null)
+  useDialogFocus(wizardOpen, wizardRef, closeWizard)
+  useDialogFocus(Boolean(pendingImport), importReviewRef, () => setPendingImport(null))
   const resolved = useMemo(() => resolveTokens(working), [working])
   const changes = useMemo(() => diffConfigurations(baseline, working), [baseline, working])
   const validation = useMemo(() => validateConfiguration(working), [working])
@@ -75,6 +115,16 @@ function App() {
   const filteredTokens = Object.values(working.semanticTokens).filter((token) =>
     `${token.label} ${token.category} ${token.id}`.toLowerCase().includes(query.toLowerCase()),
   ).filter((token) => !changedOnly || token.mapsTo !== baseline.semanticTokens[token.id].mapsTo)
+  const groupedTokens = filteredTokens.reduce<Record<string, typeof filteredTokens>>((groups, token) => {
+    const group = groups[token.category] ?? []
+    group.push(token)
+    groups[token.category] = group
+    return groups
+  }, {})
+
+  function toggleTokenGroup(category: string) {
+    setCollapsedGroups((groups) => ({ ...groups, [category]: !groups[category] }))
+  }
   const componentUsages = hasBuiltInPreview ? selectedComponent.tokenUsages.map((usage) => ({ usage, token: working.semanticTokens[usage.semanticTokenId], resolved: resolved[usage.semanticTokenId] })) : []
 
   useEffect(() => { localStorage.setItem(recoveryKey, JSON.stringify(working)) }, [recoveryKey, working])
@@ -151,8 +201,13 @@ function App() {
   }
 
   function openUploadWizardChoice() {
-    setWizardOpen(false)
+    closeWizard()
     uploadInputRef.current?.click()
+  }
+
+  function closeWizard() {
+    localStorage.setItem(wizardKey, 'true')
+    setWizardOpen(false)
   }
 
   function handleDragOver(event: DragEvent<HTMLDivElement>) {
@@ -192,7 +247,12 @@ function App() {
 
   async function copyArtifact(kind: 'json' | 'css') {
     if (!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())) return
-    await navigator.clipboard.writeText(artifacts[kind])
+    try {
+      await navigator.clipboard.writeText(artifacts[kind])
+      setImportMessage(`${kind.toUpperCase()} copied to clipboard`)
+    } catch {
+      setImportMessage(`Unable to copy ${kind.toUpperCase()}. Use Export ${kind.toUpperCase()} to download it instead.`)
+    }
   }
 
   function downloadArtifact(kind: 'json' | 'css') {
@@ -216,10 +276,10 @@ function App() {
         <div className="actions"><label className="upload-button">Upload tokens<input ref={uploadInputRef} type="file" accept="application/json,.json,text/css,.css" onChange={importTokens} /></label><button onClick={undo} disabled={!history.length}>Undo</button><button onClick={redo} disabled={!future.length}>Redo</button><button onClick={reset} disabled={!changes.length}>Reset</button><button className={comparisonEnabled ? 'compare-button active' : 'compare-button'} onClick={() => setComparisonEnabled((enabled) => !enabled)}>Compare</button><button className={validationEnabled ? 'compare-button active' : 'compare-button'} onClick={() => setValidationEnabled((enabled) => !enabled)}>Validation</button><button className="export-button" onClick={() => copyArtifact('json')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Copy JSON</button><button className="export-button" onClick={() => copyArtifact('css')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Copy CSS</button><button className="export-button" onClick={() => downloadArtifact('json')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Export JSON</button><button className="export-button" onClick={() => downloadArtifact('css')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Export CSS</button></div>
       </header>
       {draggingFile && <div className="drop-overlay" role="status"><div className="drop-target"><strong>Drop token file to import</strong><span>JSON or CSS · maximum 2 MB</span></div></div>}
-      {wizardOpen && <div className="wizard-backdrop"><section className="start-wizard" role="dialog" aria-modal="true" aria-labelledby="start-wizard-title"><div className="wizard-mark">T</div><span className="eyebrow">WELCOME TO TOKEN LAB</span><h2 id="start-wizard-title">How would you like to begin?</h2><p>Bring in an existing system or explore the bundled token sandbox.</p><div className="wizard-options"><button onClick={openUploadWizardChoice}><strong>Upload tokens</strong><span>Import a JSON token configuration</span><b>→</b></button><button onClick={openUploadWizardChoice}><strong>Upload styles</strong><span>Import a CSS variables file</span><b>→</b></button><button onClick={() => setWizardOpen(false)}><strong>Open the sandbox</strong><span>Start with the bundled sample system</span><b>→</b></button></div><button className="wizard-skip" onClick={() => setWizardOpen(false)}>Continue to the lab</button></section></div>}
+      {wizardOpen && <div className="wizard-backdrop"><section ref={wizardRef} className="start-wizard" role="dialog" aria-modal="true" aria-labelledby="start-wizard-title"><div className="wizard-mark">T</div><span className="eyebrow">WELCOME TO TOKEN LAB</span><h2 id="start-wizard-title">How would you like to begin?</h2><p>Bring in an existing system or explore the bundled token sandbox.</p><div className="wizard-options"><button onClick={openUploadWizardChoice}><strong>Upload tokens</strong><span>Import a JSON token configuration</span><b>→</b></button><button onClick={openUploadWizardChoice}><strong>Upload styles</strong><span>Import a CSS variables file</span><b>→</b></button><button onClick={closeWizard}><strong>Open the sandbox</strong><span>Start with the bundled sample system</span><b>→</b></button></div><button className="wizard-skip" onClick={closeWizard}>Continue to the lab</button></section></div>}
       {importMessage && <div className="import-message" role="status">{importMessage}</div>}
       {recovered && <div className="recovery-banner" role="status"><span>Recovered working state from this browser.</span><button onClick={discardRecovery}>Discard recovery</button></div>}
-      {pendingImport && <div className="import-review-backdrop"><section className="import-review" role="dialog" aria-modal="true" aria-labelledby="import-review-title"><div className="import-review-head"><div><span className="eyebrow">IMPORT REVIEW</span><h2 id="import-review-title">{pendingImport.fileName}</h2></div><button className="close-comparison" onClick={() => setPendingImport(null)} aria-label="Cancel import">×</button></div>{pendingImport.error ? <div className="import-error"><strong>Could not read this file</strong><p>{pendingImport.error}</p></div> : pendingImport.candidate && <><div className="import-stats"><div><strong>{Object.keys(pendingImport.candidate.primitives).length}</strong><span>primitives</span></div><div><strong>{Object.keys(pendingImport.candidate.semanticTokens).length}</strong><span>semantic tokens</span></div><div><strong>{pendingImport.warnings.length}</strong><span>warnings</span></div></div>{pendingImport.errors.length > 0 && <div className="import-error"><strong>{pendingImport.errors.length} blocking issue{pendingImport.errors.length === 1 ? '' : 's'}</strong>{pendingImport.errors.slice(0, 3).map((error) => <p key={error}>{error}</p>)}</div>}{pendingImport.genericMode && pendingImport.errors.length === 0 && <div className="import-ready generic-ready"><strong>Generic preview mode</strong><p>This configuration has its own token vocabulary. The token gallery will be available after applying.</p></div>}{!pendingImport.genericMode && pendingImport.errors.length === 0 && <div className="import-ready"><strong>Built-in previews ready</strong><p>This will replace the current baseline and reset working changes.</p></div>}<div className="import-review-actions"><button onClick={() => setPendingImport(null)}>Cancel</button><button className="export-button" onClick={applyImport} disabled={pendingImport.errors.length > 0}>Apply configuration</button></div></>}</section></div>}
+      {pendingImport && <div className="import-review-backdrop"><section ref={importReviewRef} className="import-review" role="dialog" aria-modal="true" aria-labelledby="import-review-title"><div className="import-review-head"><div><span className="eyebrow">IMPORT REVIEW</span><h2 id="import-review-title">{pendingImport.fileName}</h2></div><button className="close-comparison" onClick={() => setPendingImport(null)} aria-label="Cancel import">×</button></div>{pendingImport.error ? <div className="import-error"><strong>Could not read this file</strong><p>{pendingImport.error}</p></div> : pendingImport.candidate && <><div className="import-stats"><div><strong>{Object.keys(pendingImport.candidate.primitives).length}</strong><span>primitives</span></div><div><strong>{Object.keys(pendingImport.candidate.semanticTokens).length}</strong><span>semantic tokens</span></div><div><strong>{pendingImport.warnings.length}</strong><span>warnings</span></div></div>{pendingImport.errors.length > 0 && <div className="import-error"><strong>{pendingImport.errors.length} blocking issue{pendingImport.errors.length === 1 ? '' : 's'}</strong>{pendingImport.errors.slice(0, 3).map((error) => <p key={error}>{error}</p>)}</div>}{pendingImport.genericMode && pendingImport.errors.length === 0 && <div className="import-ready generic-ready"><strong>Generic preview mode</strong><p>This configuration has its own token vocabulary. The token gallery will be available after applying.</p></div>}{!pendingImport.genericMode && pendingImport.errors.length === 0 && <div className="import-ready"><strong>Built-in previews ready</strong><p>This will replace the current baseline and reset working changes.</p></div>}<div className="import-review-actions"><button onClick={() => setPendingImport(null)}>Cancel</button><button className="export-button" onClick={applyImport} disabled={pendingImport.errors.length > 0}>Apply configuration</button></div></>}</section></div>}
 
       <main className="workspace">
         <aside className="token-panel" aria-label="Token browser">
@@ -227,12 +287,12 @@ function App() {
           <label className="search"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search tokens" aria-label="Search tokens" /></label>
           <div className="filter-row"><button className={!changedOnly ? 'filter active' : 'filter'} onClick={() => setChangedOnly(false)}>All tokens</button><button className={changedOnly ? 'filter active' : 'filter'} onClick={() => setChangedOnly(true)}>Changed</button></div>
           <div className="token-list">
-            {filteredTokens.map((token) => { const changed = token.mapsTo !== baseline.semanticTokens[token.id].mapsTo; return <button key={token.id} className={`token-row ${selectedTokenId === token.id ? 'selected' : ''}`} onClick={() => setSelectedTokenId(token.id)}><span className="swatch" style={{ backgroundColor: resolved[token.id].value }} /><span className="token-copy"><strong>{token.label}</strong><small>{token.category} / {token.id}</small></span>{changed && <span className="changed" aria-label="Changed">●</span>}</button> })}
+            {Object.entries(groupedTokens).map(([category, tokens]) => { const collapsed = collapsedGroups[category]; return <section className="token-group" key={category} aria-labelledby={`token-group-${category}`}><button type="button" className="token-group-heading" onClick={() => toggleTokenGroup(category)} aria-expanded={!collapsed} aria-controls={`token-group-items-${category}`}><strong id={`token-group-${category}`}>{category}</strong><span>{tokens.length} <b aria-hidden="true">{collapsed ? '+' : '−'}</b></span></button><div id={`token-group-items-${category}`} hidden={collapsed}>{tokens.map((token) => { const changed = token.mapsTo !== baseline.semanticTokens[token.id].mapsTo; return <button key={token.id} className={`token-row ${selectedTokenId === token.id ? 'selected' : ''}`} onClick={() => setSelectedTokenId(token.id)}><span className="swatch" style={{ backgroundColor: resolved[token.id].value }} /><span className="token-copy"><strong>{token.label}</strong><small>{token.category} / {token.id}</small></span>{changed && <span className="changed" aria-label="Changed">●</span>}</button> })}</div></section> })}
           </div>
           <div className="panel-foot"><span className="legend-dot changed" /> Working changes <strong>{changes.length}</strong></div>
         </aside>
 
-        {hasBuiltInPreview ? <PreviewWorkspace resolved={resolved} onSelectComponent={setSelectedComponentId} /> : <GenericPreview working={working} resolved={resolved} onSelectToken={setSelectedTokenId} />}
+        {hasBuiltInPreview ? <PreviewWorkspace resolved={resolved} onSelectComponent={setSelectedComponentId} onSelectToken={setSelectedTokenId} selectedTokenId={selectedTokenId} /> : <GenericPreview working={working} resolved={resolved} onSelectToken={setSelectedTokenId} />}
 
         <aside className="inspector" aria-label="Component inspector"><div className="inspector-title"><div><span className="eyebrow">INSPECTOR</span><h2>{selectedComponent.name}</h2></div><span className="inspect-icon">⌘</span></div><p className="muted">Registered usage chain · {selectedComponent.previewId}</p><div className="usage-list">{componentUsages.map(({ usage, token, resolved: value }) => <button className="usage" key={usage.id} onClick={() => setSelectedTokenId(usage.semanticTokenId)}><div className="usage-head"><strong>{usage.description}</strong><span>{usage.property}</span></div><div className="chain"><span>{token.id}</span><b>→</b><span>{value.primitiveTokenId}</span><b>→</b><i style={{ backgroundColor: value.value }} /> <code>{value.value}</code></div></button>)}</div><div className="inspector-section"><span className="eyebrow">SELECTED TOKEN</span><h3>{selectedToken.label}</h3><p className="muted">{selectedToken.description}</p><div className="mapping-line"><span className="swatch large" style={{ backgroundColor: resolved[selectedTokenId].value }} /><div><small>RESOLVES TO</small><strong>{resolved[selectedTokenId].primitiveTokenId}</strong></div><code>{resolved[selectedTokenId].value}</code></div><label className="mapping-label" htmlFor="mapping">Working mapping <small>{selectedToken.allowedPrimitiveGroups?.join(' · ')} scale</small><select id="mapping" value={selectedToken.mapsTo} onChange={(event) => updateMapping(event.target.value)}>{Object.values(working.primitives).filter((primitive) => !selectedToken.allowedPrimitiveGroups || selectedToken.allowedPrimitiveGroups.includes(primitive.group)).map((primitive) => <option key={primitive.id} value={primitive.id}>{primitive.id} · {primitive.value}</option>)}</select></label></div><div className="accessibility"><span className="eyebrow">ACCESSIBILITY RESULTS</span>{accessibilityResults.map((result) => <div className={`contrast-result ${result.status}`} key={result.ruleId}><span>{result.status === 'pass' ? '✓' : '!'}</span><div><strong>{result.label} · {result.status}</strong><small>{result.ratio.toFixed(2)}:1 / {result.minimumRatio}:1 required</small></div></div>)}</div><div className="accessibility validation-block"><span className="eyebrow">VALIDATION SNAPSHOT</span><div className={`pass ${validation.valid ? '' : 'validation-error'}`}><span>{validation.valid ? '✓' : '!'}</span><div><strong>{validation.valid ? 'Configuration valid' : `${validation.errors.length} blocking error${validation.errors.length > 1 ? 's' : ''}`}</strong><small>{validation.warnings.length ? `${validation.warnings.length} warning${validation.warnings.length > 1 ? 's' : ''} · ` : ''}Export is {validation.valid ? 'ready' : 'blocked'}.</small></div></div></div></aside>
       </main>
@@ -251,3 +311,4 @@ function DependencyImpact({ tokenId }: { tokenId: string }) {
   const componentIds = graph.bySemanticToken[tokenId] ?? []
   return <section className="dependency-strip" aria-label="Dependency impact"><span className="eyebrow">DEPENDENCY IMPACT</span><strong>{tokenId}</strong><span className="dependency-copy">used by {componentIds.length} registered component{componentIds.length === 1 ? '' : 's'}</span><div className="dependency-chips">{componentIds.length ? componentIds.map((componentId) => <span key={componentId}>{componentId}</span>) : <span>no registered usages</span>}</div></section>
 }
+

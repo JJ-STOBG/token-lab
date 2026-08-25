@@ -12,6 +12,8 @@ dist
 dist-ssr
 *.local
 *.docx
+playwright-report
+test-results
 
 # Editor directories and files
 .vscode/*
@@ -23,3 +25,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local agent skills
+.agents/
+.claude/
+agent/
+skills-lock.json

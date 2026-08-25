@@ -32,6 +32,7 @@ npm run dev
 - Functional local previews for Homepage, Markets, Project Detail, Careers, and Contact.
 - Generic product surface with no organization-specific branding in the UI or generated artifacts.
 - JSON token upload that validates the configuration and requires the semantic IDs used by the built-in preview registry before replacing the baseline.
+- Bundled primitive scales across Neutral, Cerulean, Orange, Teal, Taupe, and Burgundy, with semantic allowed-group filtering retained.
 - Page-specific registered components for Markets, Project Detail, and Careers, plus selected-token dependency impact in the lab shell.
 - Page-specific automated accessibility rules and export manifests carrying actual validation and contrast-failure counts.
 - Focused Vitest coverage for resolution, validation, contrast, diffs, and export ordering.

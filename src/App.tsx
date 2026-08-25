@@ -10,6 +10,7 @@ import type { TokenConfiguration } from './tokens/token-types'
 import { validateConfiguration } from './tokens/validator'
 import { importCssConfiguration } from './tokens/css-importer'
 import { PreviewWorkspace } from './previews/PreviewWorkspace'
+import { GenericPreview } from './previews/GenericPreview'
 
 const previewRequiredIds = ['accent-brand', 'action-primary', 'background-subtle', 'background-canvas', 'text-primary', 'text-on-brand']
 
@@ -20,6 +21,7 @@ interface PendingImport {
   errors: string[]
   warnings: string[]
   missingIds: string[]
+  genericMode: boolean
 }
 
 function App() {
@@ -50,16 +52,17 @@ function App() {
   const resolved = useMemo(() => resolveTokens(working), [working])
   const changes = useMemo(() => diffConfigurations(baseline, working), [baseline, working])
   const validation = useMemo(() => validateConfiguration(working), [working])
-  const allAccessibilityResults = useMemo(() => evaluateAccessibility(accessibilityRules, resolved), [resolved])
+  const hasBuiltInPreview = previewRequiredIds.every((id) => Boolean(working.semanticTokens[id]))
+  const allAccessibilityResults = useMemo(() => hasBuiltInPreview ? evaluateAccessibility(accessibilityRules, resolved) : [], [hasBuiltInPreview, resolved])
   const accessibilityFailures = allAccessibilityResults.filter((result) => result.status === 'fail')
   const artifacts = useMemo(() => exportConfiguration(working, { overrideReason, errorCount: validation.errors.length, warningCount: validation.warnings.length, accessibilityFailCount: accessibilityFailures.length }), [accessibilityFailures.length, overrideReason, validation.errors.length, validation.warnings.length, working])
-  const accessibilityResults = useMemo(() => evaluateAccessibility(accessibilityRules.filter((rule) => rule.componentId === selectedComponentId), resolved), [resolved, selectedComponentId])
-  const selectedToken = working.semanticTokens[selectedTokenId]
+  const accessibilityResults = useMemo(() => hasBuiltInPreview ? evaluateAccessibility(accessibilityRules.filter((rule) => rule.componentId === selectedComponentId), resolved) : [], [hasBuiltInPreview, resolved, selectedComponentId])
+  const selectedToken = working.semanticTokens[selectedTokenId] ?? Object.values(working.semanticTokens)[0]
   const selectedComponent = componentDefinitions.find((component) => component.id === selectedComponentId) ?? componentDefinitions[0]
   const filteredTokens = Object.values(working.semanticTokens).filter((token) =>
     `${token.label} ${token.category} ${token.id}`.toLowerCase().includes(query.toLowerCase()),
   ).filter((token) => !changedOnly || token.mapsTo !== baseline.semanticTokens[token.id].mapsTo)
-  const componentUsages = selectedComponent.tokenUsages.map((usage) => ({ usage, token: working.semanticTokens[usage.semanticTokenId], resolved: resolved[usage.semanticTokenId] }))
+  const componentUsages = hasBuiltInPreview ? selectedComponent.tokenUsages.map((usage) => ({ usage, token: working.semanticTokens[usage.semanticTokenId], resolved: resolved[usage.semanticTokenId] })) : []
 
   useEffect(() => { localStorage.setItem(recoveryKey, JSON.stringify(working)) }, [recoveryKey, working])
 
@@ -108,10 +111,11 @@ function App() {
           error: '',
           errors: result.errors.map((issue) => issue.message),
           warnings: result.warnings.map((issue) => issue.message),
-          missingIds: previewRequiredIds.filter((id) => !candidate.semanticTokens[id]),
+          missingIds: [],
+          genericMode: !previewRequiredIds.every((id) => Boolean(candidate.semanticTokens[id])),
         })
       } catch (error) {
-        setPendingImport({ fileName: file.name, candidate: null, error: error instanceof Error ? error.message : 'Unable to parse token configuration.', errors: [], warnings: [], missingIds: [] })
+        setPendingImport({ fileName: file.name, candidate: null, error: error instanceof Error ? error.message : 'Unable to parse token configuration.', errors: [], warnings: [], missingIds: [], genericMode: false })
       }
     }
     reader.readAsText(file)
@@ -119,7 +123,7 @@ function App() {
   }
 
   function applyImport() {
-    if (!pendingImport?.candidate || pendingImport.errors.length || pendingImport.missingIds.length) return
+    if (!pendingImport?.candidate || pendingImport.errors.length) return
     const candidate = pendingImport.candidate
     setBaseline(structuredClone(candidate))
     setWorking(structuredClone(candidate))
@@ -163,7 +167,7 @@ function App() {
       </header>
       {importMessage && <div className="import-message" role="status">{importMessage}</div>}
       {recovered && <div className="recovery-banner" role="status"><span>Recovered working state from this browser.</span><button onClick={discardRecovery}>Discard recovery</button></div>}
-      {pendingImport && <div className="import-review-backdrop"><section className="import-review" role="dialog" aria-modal="true" aria-labelledby="import-review-title"><div className="import-review-head"><div><span className="eyebrow">IMPORT REVIEW</span><h2 id="import-review-title">{pendingImport.fileName}</h2></div><button className="close-comparison" onClick={() => setPendingImport(null)} aria-label="Cancel import">×</button></div>{pendingImport.error ? <div className="import-error"><strong>Could not read this file</strong><p>{pendingImport.error}</p></div> : pendingImport.candidate && <><div className="import-stats"><div><strong>{Object.keys(pendingImport.candidate.primitives).length}</strong><span>primitives</span></div><div><strong>{Object.keys(pendingImport.candidate.semanticTokens).length}</strong><span>semantic tokens</span></div><div><strong>{pendingImport.warnings.length}</strong><span>warnings</span></div></div>{pendingImport.errors.length > 0 && <div className="import-error"><strong>{pendingImport.errors.length} blocking issue{pendingImport.errors.length === 1 ? '' : 's'}</strong>{pendingImport.errors.slice(0, 3).map((error) => <p key={error}>{error}</p>)}</div>}{pendingImport.missingIds.length > 0 && <div className="import-error"><strong>Preview compatibility incomplete</strong><p>Missing: {pendingImport.missingIds.join(', ')}</p></div>}{pendingImport.errors.length === 0 && pendingImport.missingIds.length === 0 && <div className="import-ready"><strong>Ready to apply</strong><p>This will replace the current baseline and reset working changes.</p></div>}<div className="import-review-actions"><button onClick={() => setPendingImport(null)}>Cancel</button><button className="export-button" onClick={applyImport} disabled={pendingImport.errors.length > 0 || pendingImport.missingIds.length > 0}>Apply configuration</button></div></>}</section></div>}
+      {pendingImport && <div className="import-review-backdrop"><section className="import-review" role="dialog" aria-modal="true" aria-labelledby="import-review-title"><div className="import-review-head"><div><span className="eyebrow">IMPORT REVIEW</span><h2 id="import-review-title">{pendingImport.fileName}</h2></div><button className="close-comparison" onClick={() => setPendingImport(null)} aria-label="Cancel import">×</button></div>{pendingImport.error ? <div className="import-error"><strong>Could not read this file</strong><p>{pendingImport.error}</p></div> : pendingImport.candidate && <><div className="import-stats"><div><strong>{Object.keys(pendingImport.candidate.primitives).length}</strong><span>primitives</span></div><div><strong>{Object.keys(pendingImport.candidate.semanticTokens).length}</strong><span>semantic tokens</span></div><div><strong>{pendingImport.warnings.length}</strong><span>warnings</span></div></div>{pendingImport.errors.length > 0 && <div className="import-error"><strong>{pendingImport.errors.length} blocking issue{pendingImport.errors.length === 1 ? '' : 's'}</strong>{pendingImport.errors.slice(0, 3).map((error) => <p key={error}>{error}</p>)}</div>}{pendingImport.genericMode && pendingImport.errors.length === 0 && <div className="import-ready generic-ready"><strong>Generic preview mode</strong><p>This configuration has its own token vocabulary. The token gallery will be available after applying.</p></div>}{!pendingImport.genericMode && pendingImport.errors.length === 0 && <div className="import-ready"><strong>Built-in previews ready</strong><p>This will replace the current baseline and reset working changes.</p></div>}<div className="import-review-actions"><button onClick={() => setPendingImport(null)}>Cancel</button><button className="export-button" onClick={applyImport} disabled={pendingImport.errors.length > 0}>Apply configuration</button></div></>}</section></div>}
 
       <main className="workspace">
         <aside className="token-panel" aria-label="Token browser">
@@ -176,7 +180,7 @@ function App() {
           <div className="panel-foot"><span className="legend-dot changed" /> Working changes <strong>{changes.length}</strong></div>
         </aside>
 
-        <PreviewWorkspace resolved={resolved} onSelectComponent={setSelectedComponentId} />
+        {hasBuiltInPreview ? <PreviewWorkspace resolved={resolved} onSelectComponent={setSelectedComponentId} /> : <GenericPreview working={working} resolved={resolved} onSelectToken={setSelectedTokenId} />}
 
         <aside className="inspector" aria-label="Component inspector"><div className="inspector-title"><div><span className="eyebrow">INSPECTOR</span><h2>{selectedComponent.name}</h2></div><span className="inspect-icon">⌘</span></div><p className="muted">Registered usage chain · {selectedComponent.previewId}</p><div className="usage-list">{componentUsages.map(({ usage, token, resolved: value }) => <button className="usage" key={usage.id} onClick={() => setSelectedTokenId(usage.semanticTokenId)}><div className="usage-head"><strong>{usage.description}</strong><span>{usage.property}</span></div><div className="chain"><span>{token.id}</span><b>→</b><span>{value.primitiveTokenId}</span><b>→</b><i style={{ backgroundColor: value.value }} /> <code>{value.value}</code></div></button>)}</div><div className="inspector-section"><span className="eyebrow">SELECTED TOKEN</span><h3>{selectedToken.label}</h3><p className="muted">{selectedToken.description}</p><div className="mapping-line"><span className="swatch large" style={{ backgroundColor: resolved[selectedTokenId].value }} /><div><small>RESOLVES TO</small><strong>{resolved[selectedTokenId].primitiveTokenId}</strong></div><code>{resolved[selectedTokenId].value}</code></div><label className="mapping-label" htmlFor="mapping">Working mapping <small>{selectedToken.allowedPrimitiveGroups?.join(' · ')} scale</small><select id="mapping" value={selectedToken.mapsTo} onChange={(event) => updateMapping(event.target.value)}>{Object.values(working.primitives).filter((primitive) => !selectedToken.allowedPrimitiveGroups || selectedToken.allowedPrimitiveGroups.includes(primitive.group)).map((primitive) => <option key={primitive.id} value={primitive.id}>{primitive.id} · {primitive.value}</option>)}</select></label></div><div className="accessibility"><span className="eyebrow">ACCESSIBILITY RESULTS</span>{accessibilityResults.map((result) => <div className={`contrast-result ${result.status}`} key={result.ruleId}><span>{result.status === 'pass' ? '✓' : '!'}</span><div><strong>{result.label} · {result.status}</strong><small>{result.ratio.toFixed(2)}:1 / {result.minimumRatio}:1 required</small></div></div>)}</div><div className="accessibility validation-block"><span className="eyebrow">VALIDATION SNAPSHOT</span><div className={`pass ${validation.valid ? '' : 'validation-error'}`}><span>{validation.valid ? '✓' : '!'}</span><div><strong>{validation.valid ? 'Configuration valid' : `${validation.errors.length} blocking error${validation.errors.length > 1 ? 's' : ''}`}</strong><small>{validation.warnings.length ? `${validation.warnings.length} warning${validation.warnings.length > 1 ? 's' : ''} · ` : ''}Export is {validation.valid ? 'ready' : 'blocked'}.</small></div></div></div></aside>
       </main>

@@ -32,6 +32,7 @@ npm run dev
 - Functional local previews for Homepage, Markets, Project Detail, Careers, and Contact.
 - Generic product surface with no organization-specific branding in the UI or generated artifacts.
 - JSON and deterministic CSS token upload that validates the configuration and requires the semantic IDs used by the built-in preview registry before replacing the baseline.
+- Generic preview mode for valid custom token vocabularies that do not contain the built-in semantic IDs.
 - Import review dialog showing primitive/semantic counts, warnings, blocking issues, and preview compatibility before applying a new baseline.
 - Bundled primitive scales across Neutral, Cerulean, Orange, Teal, Taupe, and Burgundy, with semantic allowed-group filtering retained.
 - Page-specific registered components for Markets, Project Detail, and Careers, plus selected-token dependency impact in the lab shell.
@@ -54,7 +55,7 @@ See [examples/tokens.example.json](examples/tokens.example.json) for a complete 
 
 CSS uploads support the generated `--token-lab-*` format and namespaced CSS such as `--stobg-primitives-*`, `--stobg-semantic-*`, `--stobg-functional-*`, and `--stobg-brand-*`. Primitive values must be six-digit hex. Semantic aliases and camelCase names are normalized during import. Semantic-to-semantic aliases are resolved to primitives. Unsupported values such as 8-digit hex are rejected by validation.
 
-An accepted upload is reviewed before it can become the new immutable baseline. Applying it starts the working state as a separate copy and resets history; edits, undo, redo, comparison, validation, and exports then operate on the uploaded configuration. Invalid or incompatible files can be cancelled and never replace the current state.
+An accepted upload is reviewed before it can become the new immutable baseline. Applying it starts the working state as a separate copy and resets history; edits, undo, redo, comparison, validation, and exports then operate on the uploaded configuration. Configurations with the built-in semantic IDs open the full preview workspace; other valid configurations open generic token-gallery mode. Invalid files can be cancelled and never replace the current state.
 
 ## Exporting
 

@@ -20,6 +20,7 @@ npm run dev
 - Pure token resolution and official-versus-working diff functions.
 - Responsive lab shell with token browser, live homepage preview, and component inspector.
 - Working mapping changes with undo, redo, reset, live status messaging, and JSON/CSS downloads.
+- Focused Playwright coverage for the first-run wizard, token selection and remapping, preview recoloring, and collapsible token groups.
 - Configuration validation with blocking reference/color/group errors and warnings.
 - WCAG contrast ratio utility and deterministic primitive-first JSON/CSS export.
 - Registered accessibility rules evaluated against the current working resolution, with measured ratios and pass/fail status in the inspector.
@@ -30,7 +31,7 @@ npm run dev
 - Runtime Ajv 2020 schema validation with path-specific failures for malformed source or recovered data.
 - Deterministic dependency graph for semantic-token-to-component relationships.
 - Functional local previews for Homepage, Markets, Project Detail, Careers, and Contact.
-- Generic product surface with no organization-specific branding in the UI or generated artifacts.
+- Bundled STOBG sample branding in the UI; uploaded configurations remain the source of truth for generated artifacts.
 - JSON and deterministic CSS token upload that validates the configuration and requires the semantic IDs used by the built-in preview registry before replacing the baseline.
 - Generic preview mode for valid custom token vocabularies that do not contain the built-in semantic IDs.
 - Import review dialog showing primitive/semantic counts, warnings, blocking issues, and preview compatibility before applying a new baseline.
@@ -81,7 +82,7 @@ The bundled sample configuration is used as the fallback baseline. Browser recov
 | Homepage, Markets, Project Detail, Careers, Contact previews | Implemented |
 | Accessibility contrast rules and export override | Implemented |
 | Deterministic JSON/CSS export | Implemented |
-| Component and integration test breadth | In progress |
+| Component and integration test breadth | In progress; central browser workflow covered |
 | Manual keyboard, screen-reader, zoom, reflow, and reduced-motion review | Required |
 
 The automated accessibility checks are partial evidence, not accessibility certification.
@@ -91,4 +92,7 @@ The automated accessibility checks are partial evidence, not accessibility certi
 - `npm run dev` starts the development server.
 - `npm run build` runs TypeScript checks and creates a production bundle.
 - `npm run lint` runs Oxlint.
+- `npm test` runs the Vitest unit suite under `src`.
+- `npm run test:e2e` starts the Vite app and runs the Playwright browser suite.
+- `npm run preview` serves the production build locally.
 

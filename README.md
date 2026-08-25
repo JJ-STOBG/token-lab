@@ -23,9 +23,11 @@ npm run dev
 - Registered accessibility rules evaluated against the current working resolution, with measured ratios and pass/fail status in the inspector.
 - Changed-token filtering and an official-versus-working comparison drawer.
 - Validation drawer with blocking issue summary and explicit accessibility override reasons recorded in export metadata.
+- Versioned browser-local recovery with a visible discard action, plus JSON/CSS clipboard copy.
 - Focused Vitest coverage for resolution, validation, contrast, diffs, and export ordering.
 
 The included token and preview content is representative sample data for the prototype. The official baseline is never mutated by working-state changes.
+The local Word reference documents are intentionally ignored by Git and remain workspace-only source material.
 
 ## Scripts
 
@@ -35,4 +37,4 @@ The included token and preview content is representative sample data for the pro
 
 ## Next implementation slice
 
-Add JSON schemas, the remaining preview routes, clipboard export, local recovery, and broader component/integration coverage.
+Add JSON schemas, the remaining preview routes, and broader component/integration coverage.

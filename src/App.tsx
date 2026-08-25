@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 import { evaluateAccessibility } from './accessibility/evaluator'
 import { accessibilityRules } from './accessibility/rules'
@@ -9,7 +9,18 @@ import type { TokenConfiguration } from './tokens/token-types'
 import { validateConfiguration } from './tokens/validator'
 
 function App() {
-  const [working, setWorking] = useState<TokenConfiguration>(() => structuredClone(officialConfiguration))
+  const recoveryKey = 'stobg-design-system-lab:working:v1'
+  const [working, setWorking] = useState<TokenConfiguration>(() => {
+    const saved = localStorage.getItem(recoveryKey)
+    if (!saved) return structuredClone(officialConfiguration)
+    try {
+      const recovered = JSON.parse(saved) as TokenConfiguration
+      return validateConfiguration(recovered).valid ? recovered : structuredClone(officialConfiguration)
+    } catch {
+      return structuredClone(officialConfiguration)
+    }
+  })
+  const [recovered, setRecovered] = useState(() => Boolean(localStorage.getItem(recoveryKey)))
   const [selectedTokenId, setSelectedTokenId] = useState('action-primary')
   const [selectedComponentId, setSelectedComponentId] = useState('homepage-hero')
   const [query, setQuery] = useState('')
@@ -32,6 +43,8 @@ function App() {
     `${token.label} ${token.category} ${token.id}`.toLowerCase().includes(query.toLowerCase()),
   ).filter((token) => !changedOnly || token.mapsTo !== officialConfiguration.semanticTokens[token.id].mapsTo)
   const componentUsages = selectedComponent.tokenUsages.map((usage) => ({ usage, token: working.semanticTokens[usage.semanticTokenId], resolved: resolved[usage.semanticTokenId] }))
+
+  useEffect(() => { localStorage.setItem(recoveryKey, JSON.stringify(working)) }, [recoveryKey, working])
 
   function updateMapping(primitiveId: string) {
     if (primitiveId === selectedToken.mapsTo) return
@@ -62,6 +75,17 @@ function App() {
     setWorking(structuredClone(officialConfiguration))
   }
 
+  function discardRecovery() {
+    localStorage.removeItem(recoveryKey)
+    setRecovered(false)
+    reset()
+  }
+
+  async function copyArtifact(kind: 'json' | 'css') {
+    if (!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())) return
+    await navigator.clipboard.writeText(artifacts[kind])
+  }
+
   function downloadArtifact(kind: 'json' | 'css') {
     if (!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())) return
     const content = artifacts[kind]
@@ -80,8 +104,9 @@ function App() {
       <header className="topbar">
         <div className="brand"><span className="brand-mark">S</span><div><strong>STOBG</strong><span>Design System Lab</span></div></div>
         <div className="baseline"><span className="eyebrow">OFFICIAL BASELINE</span><strong>v{officialConfiguration.version}</strong><span className="status-dot" /> <span className="working-label">Working state {changes.length ? 'changed' : 'clean'}</span></div>
-        <div className="actions"><button onClick={undo} disabled={!history.length}>Undo</button><button onClick={redo} disabled={!future.length}>Redo</button><button onClick={reset} disabled={!changes.length}>Reset</button><button className={comparisonEnabled ? 'compare-button active' : 'compare-button'} onClick={() => setComparisonEnabled((enabled) => !enabled)}>Compare</button><button className={validationEnabled ? 'compare-button active' : 'compare-button'} onClick={() => setValidationEnabled((enabled) => !enabled)}>Validation</button><button className="export-button" onClick={() => downloadArtifact('json')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Export JSON</button><button className="export-button" onClick={() => downloadArtifact('css')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Export CSS</button></div>
+        <div className="actions"><button onClick={undo} disabled={!history.length}>Undo</button><button onClick={redo} disabled={!future.length}>Redo</button><button onClick={reset} disabled={!changes.length}>Reset</button><button className={comparisonEnabled ? 'compare-button active' : 'compare-button'} onClick={() => setComparisonEnabled((enabled) => !enabled)}>Compare</button><button className={validationEnabled ? 'compare-button active' : 'compare-button'} onClick={() => setValidationEnabled((enabled) => !enabled)}>Validation</button><button className="export-button" onClick={() => copyArtifact('json')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Copy JSON</button><button className="export-button" onClick={() => copyArtifact('css')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Copy CSS</button><button className="export-button" onClick={() => downloadArtifact('json')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Export JSON</button><button className="export-button" onClick={() => downloadArtifact('css')} disabled={!validation.valid || (accessibilityFailures.length > 0 && !overrideReason.trim())}>Export CSS</button></div>
       </header>
+      {recovered && <div className="recovery-banner" role="status"><span>Recovered working state from this browser.</span><button onClick={discardRecovery}>Discard recovery</button></div>}
 
       <main className="workspace">
         <aside className="token-panel" aria-label="Token browser">

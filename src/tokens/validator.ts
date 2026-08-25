@@ -1,9 +1,10 @@
 import type { TokenConfiguration, ValidationIssue, ValidationResult } from './token-types'
+import { validateSourceSchema } from './schema-validator'
 
 const hexColor = /^#[0-9A-F]{6}$/
 
 export function validateConfiguration(configuration: TokenConfiguration): ValidationResult {
-    const errors: ValidationIssue[] = []
+    const errors: ValidationIssue[] = validateSourceSchema(configuration)
     const warnings: ValidationIssue[] = []
     const seenIds = new Set<string>()
 

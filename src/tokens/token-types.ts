@@ -85,3 +85,8 @@ export interface ComponentDefinition {
         description: string
     }>
 }
+
+export interface DependencyGraph {
+    bySemanticToken: Record<string, string[]>
+    byComponent: Record<string, string[]>
+}

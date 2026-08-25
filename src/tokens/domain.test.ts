@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { contrastRatio, meetsContrast } from '../accessibility/contrast'
-import { officialConfiguration } from './official'
+import { componentDefinitions, officialConfiguration } from './official'
 import { exportConfiguration } from './exporter'
 import { diffConfigurations, resolveTokens } from './resolver'
 import { validateConfiguration } from './validator'
 import { evaluateAccessibility } from '../accessibility/evaluator'
 import { accessibilityRules } from '../accessibility/rules'
+import { buildDependencyGraph } from './dependencies'
+import { validateSourceSchema } from './schema-validator'
 
 describe('token domain', () => {
     it('resolves semantic tokens to primitive values', () => {
@@ -20,6 +22,12 @@ describe('token domain', () => {
         const result = validateConfiguration(configuration)
         expect(result.valid).toBe(false)
         expect(result.errors.map((issue) => issue.code)).toEqual(expect.arrayContaining(['invalid-color', 'missing-reference']))
+    })
+
+    it('returns path-specific schema errors for malformed source data', () => {
+        const errors = validateSourceSchema({ schemaVersion: '1.0.0' })
+        expect(errors.length).toBeGreaterThan(0)
+        expect(errors.some((issue) => issue.path === '/')).toBe(true)
     })
 
     it('calculates known WCAG contrast values without display rounding', () => {
@@ -44,5 +52,11 @@ describe('token domain', () => {
         expect(results).toHaveLength(4)
         expect(results.find((result) => result.ruleId === 'form-label-contrast')?.status).toBe('pass')
         expect(results.every((result) => result.ratio > 0)).toBe(true)
+    })
+
+    it('builds stable component dependencies from registered usages', () => {
+        const graph = buildDependencyGraph(componentDefinitions)
+        expect(graph.bySemanticToken['action-primary']).toEqual(['contact-form', 'homepage-hero'])
+        expect(graph.byComponent['homepage-hero']).toEqual(['accent-brand', 'action-primary', 'text-on-brand'])
     })
 })
